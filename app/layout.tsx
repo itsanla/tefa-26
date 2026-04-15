@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "./lib/auth";
 
 export const metadata: Metadata = {
-  title: "Aplikasi sekolah",
-  description: "ini aplikasi sekolah",
+  title: "SMK Negeri 26 — Sistem Informasi Kelulusan",
+  description:
+    "Sistem informasi pengecekan kelulusan dan manajemen data siswa SMK Negeri 26",
 };
 
 export default function RootLayout({
@@ -12,11 +14,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="id">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

@@ -1,15 +1,25 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  
+
   "name": "pengabdian-smk-26",
   "compatibility_date": "2026-04-15",
   "compatibility_flags": ["nodejs_compat"],
 
+  // Next.js static export output directory
+  "pages_build_output_dir": "./out",
+
+  // D1 Database binding
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "sekolah",
-      "database_id": "e60e472d-ac1c-4c7c-b8fd-3cff0247a7ee"
+      "database_id": "e60e472d-ac1c-4c7c-b8fd-3cff0247a7ee",
+      "migrations_dir": "./drizzle/migrations"
     }
-  ]
+  ],
+
+  // Environment variables
+  "vars": {
+    "JWT_SECRET": "smk26-secret-key-change-in-production"
+  }
 }
