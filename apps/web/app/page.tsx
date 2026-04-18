@@ -25,7 +25,7 @@ const BtnArrow = () => (
   </span>
 );
 
-const GolfLogo = () => (
+const SMKLogo = () => (
   <Image
     src="/icon.webp"
     alt="SMK 2 Logo"
@@ -64,25 +64,23 @@ const FlagBe = () => (
 // ─── Contact Column ───────────────────────────────────────────────────────────
 
 const ContactColumn = () => (
-    <div className="pr-4 flex flex-col lg:flex-row gap-x-16">
-      <div className="flex flex-col">
-      <p className="text-[15px] font-medium text-[#F0EAD2] mb-2.5 tracking-wide">Contact</p>
+  <div className="flex flex-col lg:flex-row justify-center lg:gap-x-16 lg:item-center gap-y-4">
+    <div className="flex flex-col">
+      <p className="text-[15px] font-medium text-[#F0EAD2] tracking-wide mb-2">Contact</p>
+        <p className="text-[13px] text-[#8A8679] leading-relaxed mb-0.5">
+          Woelwijk 101,<br />
+          8926 XD Leeuwarden<br />
+          0511 - 43 22 99
+        </p>
 
-      <p className="text-[13px] text-[#8A8679] leading-relaxed mb-0.5">
-        Woelwijk 101,<br />
-        8926 XD Leeuwarden<br />
-        0511 - 43 22 99
-      </p>
-
-      <a
-        href="mailto:info@leeuwardergolfclub.nl"
-        className="text-[13px] text-[#8A8679] no-underline hover:text-[#F0EAD2] transition-colors duration-200"
-      >
-        info@leeuwardergolfclub.nl
-      </a>
+        <a
+          href="mailto:info@leeuwardergolfclub.nl"
+          className="text-[13px] text-[#8A8679] no-underline hover:text-[#F0EAD2] transition-colors duration-200"
+        >
+          info@leeuwardergolfclub.nl
+        </a>
     </div>
-
-    <div className="mt-5 flex flex-col gap-1">
+    <div className="flex flex-col gap-1 mt-7">
       {["Facebook", "Instagram", "LinkedIn"].map((name) => (
         <a
           key={name}
@@ -100,7 +98,7 @@ const ContactColumn = () => (
 // ─── CTA Column ──────────────────────────────────────────────────────────────
 
 const CTAColumn = () => (
-  <div className="flex flex-row items-center gap-3">
+  <div className="flex flex-row items-center justify-center gap-3">
     {["Starttijd reserveren", "Direct lid worden"].map((label) => (
       <button
         key={label}
@@ -114,29 +112,19 @@ const CTAColumn = () => (
 );
 
 // ─── Nav Column ───────────────────────────────────────────────────────────────
-
-const navLinks = [
-  "Onze club",
-  "De baan",
-  "Voor gasten",
-  "Onze evenementen",
-  "Beginnen met Golf",
-  "Contact",
-];
-
 const NavColumn = () => (
-  <div>
-    <p className="text-[15px] font-medium text-[#F0EAD2] mb-2.5 tracking-wide">Snel naar</p>
-    <div className="grid grid-cols-2 gap-x-6 gap-y-0">
-      {navLinks.map((link) => (
-        <a
-          key={link}
-          href="#"
-          className="text-[13px] text-[#8A8679] no-underline leading-[1.9] hover:text-[#F0EAD2] transition-colors duration-200"
-        >
-          {link}
-        </a>
-      ))}
+  <div className="flex flex-col lg:flex-row lg:justify-center lg:gap-x-16 gap-y-4">
+    <div>
+      <p className="text-[15px] font-medium text-[#F0EAD2] mb-2 tracking-wide">Snel naar</p>
+      <div className="text-[13px] text-[#8A8679] no-underline leading-[1.9] hover:text-[#F0EAD2] transition-colors duration-200">
+        <a href="#">Home</a><br />
+        <a href="#">Home</a><br />
+        <a href="#">Home</a><br />
+      </div>
+    </div>
+    <div className="text-[13px] text-[#8A8679] no-underline leading-[1.9] hover:text-[#F0EAD2] transition-colors duration-200 mt-7">
+      <a href="#">Home</a><br />
+      <a href="#">Home</a><br />
     </div>
   </div>
 );
@@ -180,8 +168,8 @@ export default function Footer() {
   return (
     <footer className="font-sans">
       {/* Logo */}
-      <div className="flex justify-center relative z-10 pt-14 -mb-16">
-        <GolfLogo />
+      <div className="flex justify-center relative z-10 -mb-16">
+        <SMKLogo />
       </div>
 
       {/* Dark panel */}
@@ -208,12 +196,14 @@ export default function Footer() {
         </div>
 
         {/* Three-column body */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 items-center relative z-10 pb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-24 lg:gap-6 items-center relative z-10 pb-8 pt-8 lg:pt-0">
           <ContactColumn />
           <div className="hidden lg:block">
           <CTAColumn />
           </div>
-          <NavColumn />
+          <div>
+            <NavColumn />
+          </div>
         </div>
 
         {/* Bottom bar */}
