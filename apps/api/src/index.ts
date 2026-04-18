@@ -1,6 +1,11 @@
-import { Hono } from 'hono'
-const app = new Hono()
+import { Hono } from 'hono';
+import { usersApp } from './routes/users';
+import type { Env, Variables } from './types';
 
-app.get('/', (c) => c.text('Hello Cloudflare Workers!'))
+const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-export default app
+app.get('/', (c) => c.text('Hello Cloudflare Workers!'));
+
+app.route('/users', usersApp);
+
+export default app;

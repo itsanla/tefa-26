@@ -1,10 +1,6 @@
 import { drizzle } from 'drizzle-orm/d1';
+import type { Env } from './types';
 
-export interface Env {
-  DB: D1Database;
+export function getDb(env: Env) {
+  return drizzle(env.DB);
 }
-export default {
-  async fetch(request: Request, env: Env) {
-    const db = drizzle(env.DB);
-  },
-};
