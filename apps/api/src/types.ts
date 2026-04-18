@@ -3,5 +3,5 @@ export interface Env {
 }
 
 export interface Variables {
-  adminId: number;
+  adminId: string;
 }

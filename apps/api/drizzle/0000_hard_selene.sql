@@ -1,5 +1,5 @@
 CREATE TABLE `kelulusan_table` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`id` text PRIMARY KEY NOT NULL,
 	`nim` text NOT NULL,
 	`lulus` integer NOT NULL,
 	`createdAt` integer NOT NULL,
@@ -8,8 +8,8 @@ CREATE TABLE `kelulusan_table` (
 );
 --> statement-breakpoint
 CREATE TABLE `siswa_table` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`userId` integer NOT NULL,
+	`id` text PRIMARY KEY NOT NULL,
+	`userId` text NOT NULL,
 	`nim` text NOT NULL,
 	`name` text NOT NULL,
 	`createdAt` integer NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE `siswa_table` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `siswa_table_nim_unique` ON `siswa_table` (`nim`);--> statement-breakpoint
 CREATE TABLE `users_table` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`id` text PRIMARY KEY NOT NULL,
 	`username` text NOT NULL,
 	`email` text,
 	`password` text NOT NULL,

@@ -15,7 +15,7 @@ const isAdmin = async (c: HonoContext, next: Next) => {
   if (!adminId) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
-  c.set('adminId', parseInt(adminId));
+  c.set('adminId', adminId);
   await next();
 };
 
@@ -42,14 +42,12 @@ usersApp.get('/', isAdmin, async (c) => {
 usersApp.get('/:id', isAdmin, async (c) => {
   const db = drizzle(c.env.DB);
   const adminId = c.get('adminId');
-  const idParam = c.req.param('id');
+  const userId = c.req.param('id');
   
-  if (!idParam || isNaN(parseInt(idParam))) {
+  if (!userId) {
     return c.json({ error: 'Invalid user ID' }, 400);
   }
   
-  const userId = parseInt(idParam);
-
   if (userId === adminId) {
     return c.json({ error: 'Cannot access your own account through this endpoint' }, 403);
   }
@@ -91,11 +89,13 @@ usersApp.post('/', isAdmin, async (c) => {
 
   const now = Math.floor(Date.now() / 1000);
   const hashedPassword = await hashPassword(password);
+  const userId = crypto.randomUUID();
 
   try {
     const result = await db
       .insert(usersTable)
       .values({
+        id: userId,
         username,
         email: email || null,
         password: hashedPassword,
@@ -118,13 +118,12 @@ usersApp.post('/', isAdmin, async (c) => {
 usersApp.put('/:id', isAdmin, async (c) => {
   const db = drizzle(c.env.DB);
   const adminId = c.get('adminId');
-  const idParam = c.req.param('id');
+  const userId = c.req.param('id');
   
-  if (!idParam || isNaN(parseInt(idParam))) {
+  if (!userId) {
     return c.json({ error: 'Invalid user ID' }, 400);
   }
   
-  const userId = parseInt(idParam);
   const body = await c.req.json();
 
   if (userId === adminId) {
@@ -182,14 +181,12 @@ usersApp.put('/:id', isAdmin, async (c) => {
 usersApp.delete('/:id', isAdmin, async (c) => {
   const db = drizzle(c.env.DB);
   const adminId = c.get('adminId');
-  const idParam = c.req.param('id');
+  const userId = c.req.param('id');
   
-  if (!idParam || isNaN(parseInt(idParam))) {
+  if (!userId) {
     return c.json({ error: 'Invalid user ID' }, 400);
   }
   
-  const userId = parseInt(idParam);
-
   if (userId === adminId) {
     return c.json({ error: 'Cannot delete your own account' }, 403);
   }
