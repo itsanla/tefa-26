@@ -75,3 +75,5 @@ lerna-debug.log*
 .DS_Store
 
 source-code/
+.claude/
+skills-lock.json
