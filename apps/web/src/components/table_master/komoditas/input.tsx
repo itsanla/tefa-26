@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { apiRequest } from '@/services/api.service';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface ModalProps {
     isOpen: boolean;
@@ -83,6 +83,20 @@ export default function InputKomoditasForm({
 
     const [jenisList, setJenisList] = useState<any[]>([]);
 
+    // Memoize preview URL to prevent memory leak
+    const previewUrl = useMemo(() => {
+        return foto ? URL.createObjectURL(foto) : null;
+    }, [foto]);
+
+    // Cleanup blob URL on unmount or when foto changes
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
     useEffect(() => {
         fetchDataJenis();
 
@@ -104,7 +118,7 @@ export default function InputKomoditasForm({
             setJenisList(Array.isArray(data) ? data : [data]);
         } catch (err) {
             console.error("Gagal ambil data jenis:", err);
-            toast.error("Gagal mengambil data jenis.");
+            toast.error("Gagal mengambil data jenis");
         }
     };
 
@@ -148,9 +162,9 @@ export default function InputKomoditasForm({
                     newErrors[error.path] = error.msg;
                 });
                 setErrors(newErrors);
-                toast.error(err.response.data.message || "Validasi gagal.");
+                toast.error(err.response.data.message || "Validasi gagal");
             } else {
-                toast.error(err.message || "Terjadi kesalahan.");
+                toast.error(err.message || "Terjadi kesalahan");
             }
         } finally {
             setLoading(false);
@@ -231,19 +245,34 @@ export default function InputKomoditasForm({
                     )}
 
                     <label>Upload Gambar</label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                            e.target.files && setFoto(e.target.files[0])
-                        }
-                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
+                    <div className="flex flex-col gap-2">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    // Check file size (10MB = 10485760 bytes)
+                                    if (file.size > 10485760) {
+                                        toast.error('Ukuran file terlalu besar! Maksimal 10 MB');
+                                        e.target.value = ''; // Reset input
+                                        setFoto(null); // Clear state
+                                        return;
+                                    }
+                                    setFoto(file);
+                                }
+                            }}
+                            className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Format: JPG, PNG, JPEG. Maksimal ukuran: 10 MB
+                        </p>
+                    </div>
 
                     <label>Preview</label>
-                    {foto ? (
+                    {previewUrl ? (
                         <img
-                            src={URL.createObjectURL(foto)}
+                            src={previewUrl}
                             alt="Preview"
                             className="max-h-48 rounded border"
                         />
