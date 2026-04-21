@@ -77,3 +77,4 @@ lerna-debug.log*
 source-code/
 .claude/
 skills-lock.json
+.vscode/
