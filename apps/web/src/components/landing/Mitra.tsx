@@ -132,57 +132,57 @@ const tickerStyles = `
 const mitraList = [
 	{
 		name: 'PT Kebun Bumi Lestari (KBL)',
-		logo: '/image/mitra/thefamili.jpeg',
+		logo: '/image/mitra/thefamili.webp',
 		url: '#',
 	},
 	{
 		name: 'Adhiguna Samasta Harsa (ASH)',
-		logo: '/image/mitra/adhiguna.png',
+		logo: '/image/mitra/adhiguna.webp',
 		url: '#',
 	},
 	{
 		name: 'Greenhouse Solution Indonesia (GSI)',
-		logo: '/image/mitra/gsiLogo.jpeg',
+		logo: '/image/mitra/gsiLogo.webp',
 		url: '#',
 	},
 	{
 		name: 'PT MEDION',
-		logo: '/image/mitra/medion.png',
+		logo: '/image/mitra/medion.webp',
 		url: '#',
 	},
 	{
 		name: 'KARYA BERSAMA',
-		logo: '/image/placeholder.jpg',
+		logo: '/image/placeholder.webp',
 		url: '#',
 	},
 	{
 		name: 'DINAS PERTANIAN',
-		logo: '/image/mitra/dinaspertaniantanahdatar.png',
+		logo: '/image/mitra/dinaspertaniantanahdatar.webp',
 		url: '#',
 	},
 	{
 		name: 'POLITANI PAYAKUMBUH',
-		logo: '/image/mitra/poltanipyk.jpg',
+		logo: '/image/mitra/poltanipyk.webp',
 		url: '#',
 	},
 	{
 		name: 'Politeknik Negeri Padang (PNP)',
-		logo: '/image/mitra/pnp.png',
+		logo: '/image/mitra/pnp.webp',
 		url: '#',
 	},
 	{
 		name: 'Pemerintah Kabupaten Tanah Datar',
-		logo: '/image/mitra/pemkabtd.png',
+		logo: '/image/mitra/pemkabtd.webp',
 		url: '#',
 	},
 	{
 		name: 'Pemerintah Provinsi Sumatera Barat',
-		logo: '/image/mitra/pemprovsumbar.png',
+		logo: '/image/mitra/pemprovsumbar.webp',
 		url: '#',
 	},
 	{
 		name: 'SMK MOENADI Ungaran',
-		logo: '/image/mitra/smknhmoenadiunggaran.png',
+		logo: '/image/mitra/smknhmoenadiunggaran.webp',
 		url: '#',
 	},
 ];

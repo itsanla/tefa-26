@@ -417,7 +417,7 @@ const TefaHybrid = () => {
                               onError={(e) => {
                                 // If image fails to load, replace with placeholder
                                 const target = e.target as HTMLImageElement;
-                                target.src = "/image/placeholder.jpg";
+                                target.src = "/image/placeholder.webp";
                               }}
                             />
                           </motion.div>
@@ -574,7 +574,7 @@ const TefaHybrid = () => {
                 priority
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = "/image/placeholder.jpg";
+                  target.src = "/image/placeholder.webp";
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10"></div>

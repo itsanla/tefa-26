@@ -291,7 +291,7 @@ const KomoditasPage = () => {
                           className="object-cover transition-transform duration-500 group-hover:scale-110"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = "/image/placeholder.jpg";
+                            target.src = "/image/placeholder.webp";
                           }}
                         />
                       ) : (
@@ -383,7 +383,7 @@ const KomoditasPage = () => {
                     ? selectedKomoditas.foto.startsWith("http")
                       ? selectedKomoditas.foto
                       : selectedKomoditas.foto
-                    : "/image/placeholder.jpg"
+                    : "/image/placeholder.webp"
                 }
                 alt={selectedKomoditas.nama}
                 fill
@@ -391,7 +391,7 @@ const KomoditasPage = () => {
                 priority
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = "/image/placeholder.jpg";
+                  target.src = "/image/placeholder.webp";
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10"></div>

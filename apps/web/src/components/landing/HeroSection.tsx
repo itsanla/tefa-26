@@ -132,7 +132,7 @@ const HeroSection = () => {
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400/20 to-emerald-600/20 backdrop-blur-md"></div>
               <div className="absolute inset-4 rounded-full overflow-hidden border-4 border-white/10">
                 <img 
-                  src="/image/fotosama.png" 
+                  src="/image/fotosama.webp" 
                   alt="SMK NEGERI 2 Batusangkar" 
                   className="w-full h-full object-cover"
                 />

@@ -55,7 +55,7 @@ const TeknikPengelasanFabrikasiLogamPage = () => {
           <div className="w-full md:w-1/2 relative">
             <div className="relative h-72 md:h-96 rounded-2xl overflow-hidden shadow-xl bg-white p-4 flex items-center justify-center">
               <Image
-                src="/image/teknik pengelasan.png"
+                src="/image/teknik pengelasan.webp"
                 alt="Teknik Pengelasan dan Fabrikasi Logam"
                 width={400}
                 height={300}

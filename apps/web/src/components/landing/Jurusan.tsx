@@ -14,7 +14,7 @@ const bidangKeahlian = [
     description:
       "Membekali siswa dengan keterampilan teknis dalam bidang rekayasa dan manufaktur untuk memenuhi kebutuhan industri modern.",
     color: "bg-blue-600",
-    image: "/image/teknik kendaraan ringan otomotif.png",
+    image: "/image/teknik kendaraan ringan otomotif.webp",
     programKeahlian: [
       {
         id: "teknik-otomotif",
@@ -53,7 +53,7 @@ const bidangKeahlian = [
     description:
       "Membekali siswa dengan pengetahuan dan keterampilan dalam bidang pertanian, peternakan, dan pengolahan hasil pertanian modern.",
     color: "bg-green-600",
-    image: "/image/agribisni pengolahan hasil pertanian.jpg",
+    image: "/image/agribisni pengolahan hasil pertanian.webp",
     programKeahlian: [
       {
         id: "agribisnis-tanaman",
@@ -82,7 +82,7 @@ const bidangKeahlian = [
       {
         id: "agriteknologi-pengolahan",
         name: "Agriteknologi Pengolahan Hasil Pertanian",
-        Image: "/image/agribisnis pengolahan hasil pertanian.jpg",
+        Image: "/image/agribisni pengolahan hasil pertanian.webp",
         description: "Mempersiapkan siswa untuk mengolah hasil pertanian menjadi produk bernilai tambah dengan penerapan teknologi pengolahan pangan modern.",
         konsentrasi: [
           {
@@ -100,7 +100,7 @@ const bidangKeahlian = [
     description:
       "Mengembangkan kreativitas dan keterampilan dalam bidang seni dan desain untuk mendukung industri kreatif.",
     color: "bg-purple-600",
-    image: "/image/busana.png",
+    image: "/image/busana.webp",
     programKeahlian: [
       {
         id: "busana",

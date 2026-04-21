@@ -156,7 +156,7 @@ const ProfileSekolah = () => {
                 <div className="flex flex-col items-center">
                   <div className="relative h-48 w-48 mb-6 rounded-xl overflow-hidden border-4 border-emerald-100 shadow-xl">
                     <Image
-                      src="/image/kepsek.jpeg"
+                      src="/image/kepsek.webp"
                       alt="Kepala Sekolah SMK NEGERI 2 Batusangkar"
                       fill
                       className="object-cover"

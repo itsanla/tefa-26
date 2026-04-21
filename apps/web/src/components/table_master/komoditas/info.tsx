@@ -86,7 +86,7 @@ export default function InfoKomoditasForm({ isOpen, onClose, selectedKomoditas }
                                 className="max-h-48 rounded border"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
-                                  target.src = '/image/placeholder.jpg';
+                                  target.src = '/image/placeholder.webp';
                                 }}
                             />
                         ) : (
