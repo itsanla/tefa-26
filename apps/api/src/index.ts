@@ -19,11 +19,12 @@ app.use("*", logger());
 app.use("*", async (c, next) => {
   const mw = cors({
     origin: (origin) => {
-      const allowed = [
-        c.env.FRONTEND_URL,
-        "https://pengabdian-smk-2-batusangkar-fqns.vercel.app",
-      ].filter(Boolean) as string[];
-      return allowed.includes(origin) ? origin : allowed[0] ?? "*";
+      // Split ALLOWED_ORIGINS by comma if exists, otherwise use FRONTEND_URL
+      const allowedOrigins = c.env.ALLOWED_ORIGINS 
+        ? c.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+        : [c.env.FRONTEND_URL].filter(Boolean);
+      
+      return allowedOrigins.includes(origin) ? origin : allowedOrigins[0] ?? "*";
     },
     credentials: true,
   });
