@@ -378,14 +378,14 @@ export default function DashboardKepsek() {
                   <XAxis dataKey="name" />
                   <YAxis yAxisId="left" stroke="#00C49F" />
                   <YAxis yAxisId="right" orientation="right" stroke="#FFBB28" tickFormatter={(value: number) => `Rp${new Intl.NumberFormat("id-ID").format(value)}`} />
-                  <Tooltip formatter={(value: number, name: string) => {
+                  <Tooltip formatter={((value: any, name: any) => {
                     if (name === 'transaksi') {
                       return [`${value} transaksi`, 'Jumlah Transaksi'];
                     } else if (name === 'revenue') {
-                      return [`Rp${new Intl.NumberFormat("id-ID").format(value)},-`, 'Pendapatan'];
+                      return [`Rp${new Intl.NumberFormat("id-ID").format(Number(value))},-`, 'Pendapatan'];
                     }
                     return [value, name];
-                  }} />
+                  }) as any} />
                   <Legend />
                   <Line
                     yAxisId="left"
