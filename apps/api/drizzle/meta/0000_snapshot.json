@@ -1,60 +1,65 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5314cf6b-8a88-42e4-8869-d973eb73649f",
+  "id": "00000000-0000-0000-0000-000000000000",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "kelulusan_table": {
-      "name": "kelulusan_table",
+    "User": {
+      "name": "User",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "nim": {
-          "name": "nim",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "lulus": {
-          "name": "lulus",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "nama": { "name": "nama", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "email": { "name": "email", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "password": { "name": "password", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "role": { "name": "role", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
+      },
+      "indexes": {
+        "User_email_unique": { "name": "User_email_unique", "columns": ["email"], "isUnique": true }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Jenis": {
+      "name": "Jenis",
+      "columns": {
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "isDeleted": { "name": "isDeleted", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Komoditas": {
+      "name": "Komoditas",
+      "columns": {
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "id_jenis": { "name": "id_jenis", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "nama": { "name": "nama", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "deskripsi": { "name": "deskripsi", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "foto": { "name": "foto", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "satuan": { "name": "satuan", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "jumlah": { "name": "jumlah", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "isDeleted": { "name": "isDeleted", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
       },
       "indexes": {},
       "foreignKeys": {
-        "kelulusan_table_nim_siswa_table_nim_fk": {
-          "name": "kelulusan_table_nim_siswa_table_nim_fk",
-          "tableFrom": "kelulusan_table",
-          "tableTo": "siswa_table",
-          "columnsFrom": [
-            "nim"
-          ],
-          "columnsTo": [
-            "nim"
-          ],
+        "Komoditas_id_jenis_Jenis_id_fk": {
+          "name": "Komoditas_id_jenis_Jenis_id_fk",
+          "tableFrom": "Komoditas",
+          "tableTo": "Jenis",
+          "columnsFrom": ["id_jenis"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -63,150 +68,135 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "siswa_table": {
-      "name": "siswa_table",
+    "AsalProduksi": {
+      "name": "AsalProduksi",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "nim": {
-          "name": "nim",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "nama": { "name": "nama", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
       },
-      "indexes": {
-        "siswa_table_nim_unique": {
-          "name": "siswa_table_nim_unique",
-          "columns": [
-            "nim"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "siswa_table_userId_users_table_id_fk": {
-          "name": "siswa_table_userId_users_table_id_fk",
-          "tableFrom": "siswa_table",
-          "tableTo": "users_table",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "users_table": {
-      "name": "users_table",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "username": {
-          "name": "username",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "password": {
-          "name": "password",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "users_table_username_unique": {
-          "name": "users_table_username_unique",
-          "columns": [
-            "username"
-          ],
-          "isUnique": true
-        },
-        "users_table_email_unique": {
-          "name": "users_table_email_unique",
-          "columns": [
-            "email"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Produksi": {
+      "name": "Produksi",
+      "columns": {
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "id_asal": { "name": "id_asal", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "id_komoditas": { "name": "id_komoditas", "type": "integer", "primaryKey": false, "notNull": false, "autoincrement": false },
+        "kode_produksi": { "name": "kode_produksi", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "ukuran": { "name": "ukuran", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "kualitas": { "name": "kualitas", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "jumlah": { "name": "jumlah", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "harga_persatuan": { "name": "harga_persatuan", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Produksi_id_asal_AsalProduksi_id_fk": {
+          "name": "Produksi_id_asal_AsalProduksi_id_fk",
+          "tableFrom": "Produksi",
+          "tableTo": "AsalProduksi",
+          "columnsFrom": ["id_asal"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "Produksi_id_komoditas_Komoditas_id_fk": {
+          "name": "Produksi_id_komoditas_Komoditas_id_fk",
+          "tableFrom": "Produksi",
+          "tableTo": "Komoditas",
+          "columnsFrom": ["id_komoditas"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Penjualan": {
+      "name": "Penjualan",
+      "columns": {
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "id_komodity": { "name": "id_komodity", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "jumlah_terjual": { "name": "jumlah_terjual", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "id_produksi": { "name": "id_produksi", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "total_harga": { "name": "total_harga", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "keterangan": { "name": "keterangan", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Penjualan_id_komodity_Komoditas_id_fk": {
+          "name": "Penjualan_id_komodity_Komoditas_id_fk",
+          "tableFrom": "Penjualan",
+          "tableTo": "Komoditas",
+          "columnsFrom": ["id_komodity"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "Penjualan_id_produksi_Produksi_id_fk": {
+          "name": "Penjualan_id_produksi_Produksi_id_fk",
+          "tableFrom": "Penjualan",
+          "tableTo": "Produksi",
+          "columnsFrom": ["id_produksi"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Barang": {
+      "name": "Barang",
+      "columns": {
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "nama": { "name": "nama", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "satuan": { "name": "satuan", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "TransaksiBarang": {
+      "name": "TransaksiBarang",
+      "columns": {
+        "id": { "name": "id", "type": "integer", "primaryKey": true, "notNull": true, "autoincrement": true },
+        "id_barang": { "name": "id_barang", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "tanggal": { "name": "tanggal", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "masuk": { "name": "masuk", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "keluar": { "name": "keluar", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": 0 },
+        "keterangan": { "name": "keterangan", "type": "text", "primaryKey": false, "notNull": true, "autoincrement": false },
+        "createdAt": { "name": "createdAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" },
+        "updatedAt": { "name": "updatedAt", "type": "integer", "primaryKey": false, "notNull": true, "autoincrement": false, "default": "(unixepoch())" }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "TransaksiBarang_id_barang_Barang_id_fk": {
+          "name": "TransaksiBarang_id_barang_Barang_id_fk",
+          "tableFrom": "TransaksiBarang",
+          "tableTo": "Barang",
+          "columnsFrom": ["id_barang"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -214,12 +204,6 @@
   },
   "views": {},
   "enums": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "indexes": {}
-  }
+  "_meta": { "schemas": {}, "tables": {}, "columns": {} },
+  "internal": { "indexes": {} }
 }

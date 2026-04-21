@@ -1,6 +1,9 @@
-import { drizzle } from 'drizzle-orm/d1';
-import type { Env } from './types';
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "./db/schema";
+import type { Env } from "./types";
 
 export function getDb(env: Env) {
-  return drizzle(env.DB);
+  return drizzle(env.DB, { schema });
 }
+
+export type DB = ReturnType<typeof getDb>;
