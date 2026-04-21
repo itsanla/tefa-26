@@ -5,6 +5,7 @@ import { barangTable, transaksiBarangTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import type { Env, Variables } from "../types";
+import { convertTimestamps } from "../utils/date";
 
 export const transaksiBarangApp = new Hono<{
   Bindings: Env;
@@ -157,7 +158,7 @@ transaksiBarangApp.get("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mendapatkan data transaksi barang dengan id ${id}`,
-      data: { ...transaksi, barang },
+      data: convertTimestamps({ ...transaksi, barang }),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -205,7 +206,7 @@ transaksiBarangApp.post("/", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil menambahkan transaksi untuk barang dengan id ${body.id_barang}`,
-      data: newTransaksi,
+      data: convertTimestamps(newTransaksi),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -262,7 +263,7 @@ transaksiBarangApp.put("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mengupdate transaksi dengan id ${id}`,
-      data: updated,
+      data: convertTimestamps(updated),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -289,7 +290,7 @@ transaksiBarangApp.delete("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil menghapus transaksi dengan id ${id}`,
-      data: deleted,
+      data: convertTimestamps(deleted),
     });
   } catch (error) {
     return handleAnyError(c, error);

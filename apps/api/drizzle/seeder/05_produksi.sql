@@ -1,5 +1,7 @@
 -- Seed Produksi (deterministic)
+PRAGMA foreign_keys = OFF;
 DELETE FROM Produksi;
+PRAGMA foreign_keys = ON;
 
 INSERT INTO Produksi (id, id_asal, id_komoditas, kode_produksi, ukuran, kualitas, jumlah, harga_persatuan) VALUES
   (1, 4, 1, 'PROD-GREENIGAL-001', 'Sedang', 'Premium', 50, 41657),

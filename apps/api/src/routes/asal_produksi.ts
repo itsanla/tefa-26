@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { asalProduksiTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
+import { convertTimestamps } from "../utils/date";
 import type { Env, Variables } from "../types";
 
 export const asalProduksiApp = new Hono<{
@@ -18,7 +19,8 @@ asalProduksiApp.get("/", async (c) => {
       .select()
       .from(asalProduksiTable)
       .orderBy(desc(asalProduksiTable.createdAt))
-      .all();
+      .all()
+      .then(rows => rows.map(convertTimestamps));
     return c.json({
       success: true,
       message: "Berhasil mengambil semua asal produksi.",
@@ -49,7 +51,7 @@ asalProduksiApp.get("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mengambil asal produksi dengan ID ${id}.`,
-      data: row,
+      data: convertTimestamps(row),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -78,7 +80,7 @@ asalProduksiApp.post("/", async (c) => {
       {
         success: true,
         message: `Berhasil menambahkan asal produksi: ${newData.nama}`,
-        data: newData,
+        data: convertTimestamps(newData),
       },
       201,
     );
@@ -117,7 +119,7 @@ asalProduksiApp.put("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil memperbarui asal produksi: ${updated.nama}`,
-      data: updated,
+      data: convertTimestamps(updated),
     });
   } catch (error) {
     return handleAnyError(c, error);

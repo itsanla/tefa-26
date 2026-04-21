@@ -10,6 +10,7 @@ import {
 } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
+import { convertTimestamps } from "../utils/date";
 import type { Env, Variables } from "../types";
 
 export const penjualanApp = new Hono<{
@@ -60,11 +61,11 @@ penjualanApp.get("/", async (c) => {
           produksiWithAsal = { ...produksi, asal_produksi: asal };
         }
 
-        return {
+        return convertTimestamps({
           ...p,
           komoditas: komoditasWithJenis,
           produksi: produksiWithAsal,
-        };
+        });
       }),
     );
 
@@ -157,7 +158,7 @@ penjualanApp.post("/", async (c) => {
       {
         success: true,
         message: "Berhasil menambahkan data penjualan",
-        data: newPenjualan,
+        data: convertTimestamps(newPenjualan),
       },
       201,
     );

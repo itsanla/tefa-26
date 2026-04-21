@@ -6,6 +6,8 @@ import { hashPassword } from "../utils/password";
 import { Validator } from "../utils/validation";
 import { handleAnyError } from "../errors/app_error";
 import type { Env, Variables } from "../types";
+import { convertTimestamps, convertTimestampsArray } from "../utils/date";
+
 
 export const usersApp = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -16,7 +18,7 @@ usersApp.get("/", async (c) => {
     return c.json({
       success: true,
       message: "Mendapatkan data user.",
-      data: users,
+      data: convertTimestampsArray(users),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -75,7 +77,7 @@ usersApp.post("/", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil manambahkan user: ${newUser.nama}.`,
-      data: newUser,
+      data: convertTimestamps(newUser),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -142,7 +144,7 @@ usersApp.put("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mengupdate user: ${updated.nama}.`,
-      data: updated,
+      data: convertTimestamps(updated),
     });
   } catch (error) {
     return handleAnyError(c, error);

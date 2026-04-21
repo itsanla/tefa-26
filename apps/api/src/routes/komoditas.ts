@@ -9,6 +9,7 @@ import {
   uploadImageToCloudinary,
 } from "../utils/cloudinary";
 import { jwtCheckToken, isRole } from "../middlewares/auth";
+import { convertTimestamps } from "../utils/date";
 import type { Env, Variables } from "../types";
 
 export const komoditasApp = new Hono<{
@@ -52,7 +53,7 @@ komoditasApp.get("/", async (c) => {
       .where(eq(komoditasTable.isDeleted, 0))
       .all();
 
-    const data = rows.map((r) => ({
+    const data = rows.map((r) => convertTimestamps({
       id: r.id,
       id_jenis: r.id_jenis,
       jenis: { name: r.jenisName },
@@ -79,7 +80,7 @@ komoditasApp.get("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mendapatkan komoditas dengan id: ${id}`,
-      data: komoditas,
+      data: convertTimestamps(komoditas),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -149,7 +150,7 @@ komoditasApp.post("/", async (c) => {
       {
         success: true,
         message: `Berhasil menambahkan komoditas baru: ${newKomoditas.nama}`,
-        data: newKomoditas,
+        data: convertTimestamps(newKomoditas),
       },
       201,
     );
@@ -221,7 +222,7 @@ komoditasApp.put("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil update komoditas: ${updated.nama}`,
-      data: updated,
+      data: convertTimestamps(updated),
     });
   } catch (error) {
     return handleAnyError(c, error);

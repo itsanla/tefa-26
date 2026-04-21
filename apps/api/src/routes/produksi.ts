@@ -9,6 +9,7 @@ import {
 } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
+import { convertTimestamps } from "../utils/date";
 import type { Env, Variables } from "../types";
 
 export const produksiApp = new Hono<{
@@ -46,7 +47,7 @@ produksiApp.get("/", async (c) => {
             .where(eq(penjualanTable.id_produksi, p.id))
             .all(),
         ]);
-        return { ...p, asal_produksi: asal, komoditas, penjualans };
+        return convertTimestamps({ ...p, asal_produksi: asal, komoditas, penjualans });
       }),
     );
 
@@ -87,7 +88,7 @@ produksiApp.get("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mengambil data produksi dengan id ${id}`,
-      data: { ...produksi, asal_produksi: asal, penjualans },
+      data: convertTimestamps({ ...produksi, asal_produksi: asal, penjualans }),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -169,7 +170,7 @@ produksiApp.post("/", async (c) => {
       {
         success: true,
         message: `Berhasil menambahkan produksi: ${newProduksi.kode_produksi}`,
-        data: newProduksi,
+        data: convertTimestamps(newProduksi),
       },
       201,
     );
@@ -251,7 +252,7 @@ produksiApp.put("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil memperbarui produksi: ${body.kode_produksi} -> ${updated.kode_produksi}`,
-      data: updated,
+      data: convertTimestamps(updated),
     });
   } catch (error) {
     return handleAnyError(c, error);

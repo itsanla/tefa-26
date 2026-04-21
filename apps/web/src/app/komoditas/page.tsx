@@ -173,7 +173,7 @@ const KomoditasPage = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex items-center mb-6">
             <Link
-              href="/landing"
+              href="/"
               className="flex items-center text-emerald-100 hover:text-white transition-colors"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />

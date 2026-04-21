@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { jenisTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { handleAnyError } from "../errors/app_error";
+import { convertTimestamps } from "../utils/date";
 import type { Env, Variables } from "../types";
 
 export const jenisApp = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -15,7 +16,8 @@ jenisApp.get("/", async (c) => {
       .select()
       .from(jenisTable)
       .where(eq(jenisTable.isDeleted, 0))
-      .all();
+      .all()
+      .then(rows => rows.map(convertTimestamps));
     return c.json({
       success: true,
       message: "Berhasil mengembil semua jenis.",
@@ -45,7 +47,11 @@ jenisApp.post("/", async (c) => {
       .returning();
 
     return c.json(
-      { success: true, message: `Berhasil jenis ${body.name}`, data: newJenis },
+      {
+        success: true,
+        message: `Berhasil jenis ${body.name}`,
+        data: convertTimestamps(newJenis),
+      },
       201,
     );
   } catch (error) {
@@ -83,7 +89,7 @@ jenisApp.put("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil memperbarui jenis: ${body.name} -> ${updated.name}`,
-      data: updated,
+      data: convertTimestamps(updated),
     });
   } catch (error) {
     return handleAnyError(c, error);

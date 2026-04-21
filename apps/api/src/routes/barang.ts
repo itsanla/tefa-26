@@ -5,6 +5,7 @@ import { barangTable, transaksiBarangTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import type { Env, Variables } from "../types";
+import { convertTimestamps } from "../utils/date";
 
 export const barangApp = new Hono<{
   Bindings: Env;
@@ -28,7 +29,7 @@ barangApp.get("/", async (c) => {
           (sum, t) => sum + t.masuk - t.keluar,
           0,
         );
-        return { ...b, TransaksiBarang: transaksis, jumlah };
+        return convertTimestamps({ ...b, TransaksiBarang: transaksis, jumlah });
       }),
     );
 
@@ -55,7 +56,7 @@ barangApp.get("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mendapatkan data barang dengan id ${id}`,
-      data: barang,
+      data: convertTimestamps(barang),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -84,7 +85,7 @@ barangApp.post("/", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil menambahkan barang: ${newBarang.nama}.`,
-      data: newBarang,
+      data: convertTimestamps(newBarang),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -122,7 +123,7 @@ barangApp.put("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil mengupdate barang: ${updated.nama}.`,
-      data: updated,
+      data: convertTimestamps(updated),
     });
   } catch (error) {
     return handleAnyError(c, error);
@@ -149,7 +150,7 @@ barangApp.delete("/:id", async (c) => {
     return c.json({
       success: true,
       message: `Berhasil menghapus barang: ${deleted.nama}.`,
-      data: deleted,
+      data: convertTimestamps(deleted),
     });
   } catch (error) {
     return handleAnyError(c, error);
