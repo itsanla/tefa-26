@@ -1,13 +1,13 @@
 name: Build & Push to GHCR
 
-# on:
-#   push:
-#     branches: [main]
-#     tags: ["v*.*.*"]
-#   pull_request:
-#     branches: [main]
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
+# on:
+#   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io

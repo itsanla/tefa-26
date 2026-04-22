@@ -30,9 +30,17 @@ function formatTanggal(date: Date): string {
   }).format(date);
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function printStruk(data: StrukData): void {
-  const w = window.open("", "_blank", "width=320,height=600,scrollbars=no");
-  if (!w) return;
+  const esc = escapeHtml;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -74,16 +82,16 @@ export function printStruk(data: StrukData): void {
   <div class="center" style="font-size:10px;">${formatTanggal(data.tanggal)}</div>
   <div class="divider"></div>
 
-  <div class="row"><span class="label">Komoditas</span><span class="value">${data.namaKomoditas}</span></div>
-  <div class="row"><span class="label">Asal Produksi</span><span class="value">${data.asalProduksi}</span></div>
-  <div class="row"><span class="label">Kode Produksi</span><span class="value">${data.kodeProduksi}</span></div>
-  <div class="row"><span class="label">Ukuran</span><span class="value">${data.ukuran}</span></div>
-  <div class="row"><span class="label">Kualitas</span><span class="value">${data.kualitas}</span></div>
+  <div class="row"><span class="label">Komoditas</span><span class="value">${esc(data.namaKomoditas)}</span></div>
+  <div class="row"><span class="label">Asal Produksi</span><span class="value">${esc(data.asalProduksi)}</span></div>
+  <div class="row"><span class="label">Kode Produksi</span><span class="value">${esc(data.kodeProduksi)}</span></div>
+  <div class="row"><span class="label">Ukuran</span><span class="value">${esc(data.ukuran)}</span></div>
+  <div class="row"><span class="label">Kualitas</span><span class="value">${esc(data.kualitas)}</span></div>
 
   <div class="divider"></div>
 
   <div class="row"><span class="label">Harga/Satuan</span><span class="value">${formatRupiah(data.hargaPersatuan)}</span></div>
-  <div class="row"><span class="label">Jumlah</span><span class="value">${data.jumlahTerjual} ${data.satuanKomoditas}</span></div>
+  <div class="row"><span class="label">Jumlah</span><span class="value">${data.jumlahTerjual} ${esc(data.satuanKomoditas)}</span></div>
 
   <div class="divider"></div>
 
@@ -94,18 +102,23 @@ export function printStruk(data: StrukData): void {
 
   <div class="divider"></div>
 
-  ${data.keterangan ? `<div style="font-size:10px;margin:4px 0;">Ket: ${data.keterangan}</div><div class="divider"></div>` : ""}
+  ${data.keterangan ? `<div style="font-size:10px;margin:4px 0;">Ket: ${esc(data.keterangan)}</div><div class="divider"></div>` : ""}
 
   <div class="footer">Terima kasih atas pembelian Anda!</div>
   <div class="footer">-- SMKN 2 Batusangkar --</div>
 </body>
 </html>`;
 
-  w.document.open();
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  w.print();
-  w.close();
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, "_blank", "width=320,height=600,scrollbars=no");
+
+  if (!w) {
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  w.addEventListener("load", () => { w.focus(); w.print(); }, { once: true });
+  // afterprint fires on both print and cancel, ensuring cleanup always happens
+  w.addEventListener("afterprint", () => { URL.revokeObjectURL(url); w.close(); }, { once: true });
 }
