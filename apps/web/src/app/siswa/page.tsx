@@ -575,6 +575,7 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                   onChange={handleInputChange}
                   placeholder="0"
                   className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled
                 />
               </div>
 

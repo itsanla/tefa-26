@@ -104,7 +104,6 @@ penjualanApp.post("/", async (c) => {
     const id_komodity = Number(body.id_komodity);
     const id_produksi = Number(body.id_produksi);
     const jumlah_terjual = Number(body.jumlah_terjual);
-    const total_harga = Number(body.total_harga);
     const keterangan = body.keterangan ?? "";
 
     const db = getDb(c.env);
@@ -142,6 +141,8 @@ penjualanApp.post("/", async (c) => {
         updatedAt: Math.floor(Date.now() / 1000),
       })
       .where(eq(produksiTable.id, id_produksi));
+      
+    const total_harga = produksi.harga_persatuan * jumlah_terjual;
 
     const [newPenjualan] = await db
       .insert(penjualanTable)
