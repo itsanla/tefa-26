@@ -10,7 +10,7 @@ import {
 } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
-import { convertTimestamps } from "../utils/date";
+import { convertTimestamps, unixToISO } from "../utils/date";
 import type { Env, Variables } from "../types";
 
 export const penjualanApp = new Hono<{
@@ -91,9 +91,19 @@ penjualanApp.post("/", async (c) => {
 
     const v = new Validator();
     v.required(body.id_komodity, "id_komodity", "ID Komoditas harus diisi.");
-    v.isIntGt(body.id_komodity, 0, "id_komodity", "ID Komoditas harus berupa angka.");
+    v.isIntGt(
+      body.id_komodity,
+      0,
+      "id_komodity",
+      "ID Komoditas harus berupa angka.",
+    );
     v.required(body.id_produksi, "id_produksi", "ID Produksi harus diisi.");
-    v.isIntGt(body.id_produksi, 0, "id_produksi", "ID Produksi harus berupa angka.");
+    v.isIntGt(
+      body.id_produksi,
+      0,
+      "id_produksi",
+      "ID Produksi harus berupa angka.",
+    );
     if (v.hasErrors()) {
       return c.json(
         { success: false, message: "Validasi gagal", errors: v.getErrors() },
@@ -104,7 +114,6 @@ penjualanApp.post("/", async (c) => {
     const id_komodity = Number(body.id_komodity);
     const id_produksi = Number(body.id_produksi);
     const jumlah_terjual = Number(body.jumlah_terjual);
-    const total_harga = Number(body.total_harga);
     const keterangan = body.keterangan ?? "";
 
     const db = getDb(c.env);
@@ -143,6 +152,8 @@ penjualanApp.post("/", async (c) => {
       })
       .where(eq(produksiTable.id, id_produksi));
 
+    const total_harga = produksi.harga_persatuan * jumlah_terjual;
+
     const [newPenjualan] = await db
       .insert(penjualanTable)
       .values({
@@ -161,6 +172,65 @@ penjualanApp.post("/", async (c) => {
         data: convertTimestamps(newPenjualan),
       },
       201,
+    );
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
+penjualanApp.get("/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+
+    const db = getDb(c.env);
+    const transaksi = await db
+      .select()
+      .from(penjualanTable)
+      .where(eq(penjualanTable.id, Number(id)))
+      .get();
+    if (!transaksi) throw new AppError("Transaksi tidak ditemukan", 404);
+
+    const komoditas = await db
+      .select()
+      .from(komoditasTable)
+      .where(eq(komoditasTable.id, transaksi.id_komodity))
+      .get();
+    if (!komoditas) throw new AppError("Komoditas tidak ditemukan", 404);
+
+    const produksi = await db
+      .select()
+      .from(produksiTable)
+      .where(eq(produksiTable.id, transaksi.id_produksi))
+      .get();
+    if (!produksi) throw new AppError("Produksi tidak ditemukan", 404);
+
+    const asal = await db
+      .select()
+      .from(asalProduksiTable)
+      .where(eq(asalProduksiTable.id, produksi.id_asal))
+      .get();
+
+    const data = {
+      namaKomoditas: komoditas.nama,
+      satuanKomoditas: komoditas.satuan,
+      kodeProduksi: produksi.kode_produksi,
+      ukuran: produksi.ukuran,
+      kualitas: produksi.kualitas,
+      asalProduksi: asal?.nama,
+      hargaPersatuan: produksi.harga_persatuan,
+      jumlahTerjual: transaksi.jumlah_terjual,
+      totalHarga: transaksi.total_harga,
+      keterangan: transaksi.keterangan,
+      tanggal: unixToISO(transaksi.createdAt),
+    };
+
+    return c.json(
+      {
+        success: true,
+        message: "Berhasil menambahkan data penjualan",
+        data,
+      },
+      200,
     );
   } catch (error) {
     return handleAnyError(c, error);

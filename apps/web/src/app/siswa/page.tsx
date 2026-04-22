@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, ShoppingCart, Receipt, AlertCircle, Package } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ShoppingCart,
+  Receipt,
+  AlertCircle,
+  Package,
+} from "lucide-react";
 import { Komoditas, Penjualan, Produksi } from "@/types";
 import { DataTable } from "@/components/table/DataTable";
 import { Button } from "@/components/common/Button";
@@ -14,10 +21,12 @@ import { printStruk } from "@/components/struk/StrukPembelian";
 
 export default function KasirPage() {
   const username =
-    typeof window != "undefined" ? document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("username="))
-      ?.split("=")[1] ?? "User": null
+    typeof window != "undefined"
+      ? (document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("username="))
+          ?.split("=")[1] ?? "User")
+      : null;
 
   const [produksi, setProduksi] = useState<Produksi[]>([]);
   const [penjualan, setPenjualan] = useState<Penjualan[]>([]);
@@ -85,7 +94,8 @@ export default function KasirPage() {
         setProduksi(dataProduksi);
       } catch (error) {
         console.error("Error fetching data:", error);
-        const errorMessage = "Gagal memuat data. Periksa koneksi internet Anda.";
+        const errorMessage =
+          "Gagal memuat data. Periksa koneksi internet Anda.";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -127,8 +137,13 @@ export default function KasirPage() {
 
     // Validasi stok tersedia dari produksi
     if (formData.id_produksi && formData.jumlah_terjual) {
-      const selectedProduksi = produksi.find((p) => p.id === formData.id_produksi);
-      if (selectedProduksi && formData.jumlah_terjual > selectedProduksi.jumlah) {
+      const selectedProduksi = produksi.find(
+        (p) => p.id === formData.id_produksi,
+      );
+      if (
+        selectedProduksi &&
+        formData.jumlah_terjual > selectedProduksi.jumlah
+      ) {
         errors.jumlah_terjual = `Stok tidak mencukupi. Tersedia: ${selectedProduksi.jumlah} ${selectedProduksi.komoditas?.satuan}`;
       }
     }
@@ -153,9 +168,11 @@ export default function KasirPage() {
     }, 500);
   };
 
-const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
+  const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
 
     setFormData((prev) => {
@@ -172,14 +189,27 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
       };
 
       if (name === "jumlah_terjual" || name === "id_produksi") {
-        const currentIdProduksi = name === "id_produksi" ? (newValue as number) : prev.id_produksi;
-        const currentJumlahTerjual = name === "jumlah_terjual" ? (newValue as number) : prev.jumlah_terjual;
+        const currentIdProduksi =
+          name === "id_produksi" ? (newValue as number) : prev.id_produksi;
+        const currentJumlahTerjual =
+          name === "jumlah_terjual"
+            ? (newValue as number)
+            : prev.jumlah_terjual;
 
-        const selectedProduksi = produksi.find((p) => p.id === currentIdProduksi);
-        
+        const selectedProduksi = produksi.find(
+          (p) => p.id === currentIdProduksi,
+        );
+
         // Only set default total_harga if it hasn't been manually set or if id_produksi/jumlah_terjual changes
-        if (selectedProduksi && currentJumlahTerjual > 0 && (name === "id_produksi" || name === "jumlah_terjual" || prev.total_harga === 0)) {
-          newFormData.total_harga = selectedProduksi.harga_persatuan * currentJumlahTerjual;
+        if (
+          selectedProduksi &&
+          currentJumlahTerjual > 0 &&
+          (name === "id_produksi" ||
+            name === "jumlah_terjual" ||
+            prev.total_harga === 0)
+        ) {
+          newFormData.total_harga =
+            selectedProduksi.harga_persatuan * currentJumlahTerjual;
         } else if (!selectedProduksi || currentJumlahTerjual <= 0) {
           newFormData.total_harga = 0;
         }
@@ -210,7 +240,7 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
         id_komodity: formData.id_komodity,
         id_produksi: formData.id_produksi,
         jumlah_terjual: formData.jumlah_terjual,
-        total_harga: formData.total_harga
+        total_harga: formData.total_harga,
       };
 
       await apiRequest({
@@ -220,8 +250,12 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
       });
 
       if (cetakStruk) {
-        const selectedKomoditas = produksi.find((p) => p.id === formData.id_produksi)?.komoditas;
-        const selectedProd = produksi.find((p) => p.id === formData.id_produksi);
+        const selectedKomoditas = produksi.find(
+          (p) => p.id === formData.id_produksi,
+        )?.komoditas;
+        const selectedProd = produksi.find(
+          (p) => p.id === formData.id_produksi,
+        );
         if (selectedKomoditas && selectedProd) {
           printStruk({
             namaKomoditas: selectedKomoditas.nama,
@@ -265,6 +299,46 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePrintClick = async (id: number) => {
+    try {
+      setLoading(true);
+      const {
+        namaKomoditas,
+        satuanKomoditas,
+        kodeProduksi,
+        ukuran,
+        kualitas,
+        asalProduksi,
+        hargaPersatuan,
+        jumlahTerjual,
+        totalHarga,
+        keterangan,
+        tanggal,
+      } = await apiRequest({
+        endpoint: `/penjualan/${id}`,
+      });
+
+      printStruk({
+        namaKomoditas,
+        satuanKomoditas,
+        kodeProduksi,
+        ukuran,
+        kualitas,
+        asalProduksi,
+        hargaPersatuan,
+        jumlahTerjual,
+        totalHarga,
+        keterangan,
+        tanggal: new Date(tanggal),
+      });
+    } catch (err) {
+      console.error("Gagal ambil data Penjualan:", err);
+      toast.error("Gagal mengambil data penjualan.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -312,13 +386,29 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
       header: "Keterangan",
       accessorKey: "keterangan" as keyof Penjualan,
       cell: (item: Penjualan) => (
-        <span className="text-gray-600 dark:text-gray-400">{item.keterangan || "-"}</span>
+        <span className="text-gray-600 dark:text-gray-400">
+          {item.keterangan || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "Aksi",
+      accessorKey: "id" as keyof Penjualan,
+      cell: (item: Penjualan) => (
+        <button
+          className="bg-blue-600 px-4 py-3 rounded text-white"
+          onClick={() => handlePrintClick(item.id)}
+        >
+          Print
+        </button>
       ),
     },
   ];
 
   const ProdukSelect = () => {
-    const selectedProduk = uniqueKomoditas.find((k) => k.id === formData.id_komodity);
+    const selectedProduk = uniqueKomoditas.find(
+      (k) => k.id === formData.id_komodity,
+    );
 
     return (
       <div className="dropdown-container relative">
@@ -333,8 +423,15 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
               formErrors.id_komodity
                 ? "border-red-500 dark:border-red-400"
                 : "border-gray-300 dark:border-gray-600"
-            }`}>
-            <span className={selectedProduk ? "text-gray-900 dark:text-gray-100" : "text-gray-500"}>
+            }`}
+          >
+            <span
+              className={
+                selectedProduk
+                  ? "text-gray-900 dark:text-gray-100"
+                  : "text-gray-500"
+              }
+            >
               {selectedProduk?.nama || "Pilih Produk"}
             </span>
             <ChevronDown size={16} />
@@ -367,7 +464,8 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                         }));
                         setShowProdukDropdown(false);
                       }}
-                      className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                      className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                    >
                       <div className="flex justify-between items-center">
                         <div>
                           <div className="font-medium">{item.nama}</div>
@@ -380,7 +478,9 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                             Total Stok: {totalStock} {item.satuan}
                           </div>
                           {totalStock <= 5 && (
-                            <div className="text-xs text-red-500 font-medium">Stok Menipis!</div>
+                            <div className="text-xs text-red-500 font-medium">
+                              Stok Menipis!
+                            </div>
                           )}
                         </div>
                       </div>
@@ -400,14 +500,18 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
   };
 
   const ProduksiSelect = () => {
-    const selectedProduksi = produksi.find((p) => p.id === formData.id_produksi);
+    const selectedProduksi = produksi.find(
+      (p) => p.id === formData.id_produksi,
+    );
 
     return (
       <div className="dropdown-container relative">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Kode Produksi *
           {!formData.id_komodity && (
-            <span className="text-xs text-gray-500 ml-2">(Pilih produk terlebih dahulu)</span>
+            <span className="text-xs text-gray-500 ml-2">
+              (Pilih produk terlebih dahulu)
+            </span>
           )}
         </label>
         <div className="relative">
@@ -419,9 +523,15 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
               formErrors.id_produksi
                 ? "border-red-500 dark:border-red-400"
                 : "border-gray-300 dark:border-gray-600"
-            } ${!formData.id_komodity ? "opacity-50 cursor-not-allowed" : ""}`}>
+            } ${!formData.id_komodity ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
             <span
-              className={selectedProduksi ? "text-gray-900 dark:text-gray-100" : "text-gray-500"}>
+              className={
+                selectedProduksi
+                  ? "text-gray-900 dark:text-gray-100"
+                  : "text-gray-500"
+              }
+            >
               {selectedProduksi?.kode_produksi || "Pilih Kode Produksi"}
             </span>
             <ChevronDown size={16} />
@@ -445,14 +555,18 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                       setFormData((prev) => ({
                         ...prev,
                         id_produksi: item.id,
-                        id_komodity: prev.id_komodity || item.komoditas?.id || 0,
+                        id_komodity:
+                          prev.id_komodity || item.komoditas?.id || 0,
                       }));
                       setShowProduksiDropdown(false);
                     }}
-                    className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                    className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                  >
                     <div className="flex justify-between items-center">
                       <div>
-                        <div className="font-medium font-mono">{item.kode_produksi}</div>
+                        <div className="font-medium font-mono">
+                          {item.kode_produksi}
+                        </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {item.ukuran} - {item.kualitas}
                         </div>
@@ -462,7 +576,9 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                           Stok: {item.jumlah} {item.komoditas?.satuan}
                         </div>
                         {item.jumlah <= 5 && (
-                          <div className="text-xs text-red-500 font-medium">Stok Menipis!</div>
+                          <div className="text-xs text-red-500 font-medium">
+                            Stok Menipis!
+                          </div>
                         )}
                       </div>
                     </div>
@@ -521,7 +637,8 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                     <div>
                       Jumlah ({selectedProduksi.komoditas?.satuan})
                       <span className="text-xs text-gray-500 ml-2">
-                        (Tersedia: {selectedProduksi.jumlah} {selectedProduksi.komoditas?.satuan})
+                        (Tersedia: {selectedProduksi.jumlah}{" "}
+                        {selectedProduksi.komoditas?.satuan})
                       </span>
                     </div>
                   ) : (
@@ -564,19 +681,20 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                 />
               </div>
             </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Total Harga
-                </label>
-                <Input
-                  type="number"
-                  name="total_harga"
-                  value={formData.total_harga || ""}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Total Harga
+              </label>
+              <Input
+                type="number"
+                name="total_harga"
+                value={formData.total_harga || ""}
+                onChange={handleInputChange}
+                placeholder="0"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled
+              />
+            </div>
 
             <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
               <input
@@ -591,7 +709,8 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
               {isLoading ? (
                 <>
                   <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
@@ -611,7 +730,8 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
           <button
             onClick={() => setShowPenjualan(!showPenjualan)}
-            className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg">
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg"
+          >
             <div className="flex items-center gap-2">
               <Receipt size={20} className="text-blue-600" />
               <span className="font-medium">Riwayat Penjualan</span>
@@ -619,7 +739,11 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                 {penjualan.length} transaksi
               </span>
             </div>
-            {showPenjualan ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            {showPenjualan ? (
+              <ChevronUp size={20} />
+            ) : (
+              <ChevronDown size={20} />
+            )}
           </button>
 
           {showPenjualan && (
