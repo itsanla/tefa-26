@@ -1,4 +1,4 @@
-export interface StrukData {
+export interface StrukItemData {
   namaKomoditas: string;
   satuanKomoditas: string;
   kodeProduksi: string;
@@ -8,8 +8,47 @@ export interface StrukData {
   hargaPersatuan: number;
   jumlahTerjual: number;
   totalHarga: number;
+}
+
+type LegacyStrukItem = {
+  namaKomoditas?: string;
+  satuanKomoditas?: string;
+  kodeProduksi?: string;
+  ukuran?: string;
+  kualitas?: string;
+  asalProduksi?: string;
+  hargaPersatuan?: number;
+  jumlahTerjual?: number;
+  totalHarga?: number;
+  harga_satuan?: number;
+  sub_total?: number;
+  komoditas?: {
+    nama?: string;
+    satuan?: string;
+  };
+  produksi?: {
+    kode_produksi?: string;
+    ukuran?: string;
+    kualitas?: string;
+    asal_produksi?: {
+      nama?: string;
+    };
+  };
+};
+
+export interface StrukData {
+  items?: LegacyStrukItem[];
+  namaKomoditas?: string;
+  satuanKomoditas?: string;
+  kodeProduksi?: string;
+  ukuran?: string;
+  kualitas?: string;
+  asalProduksi?: string;
+  hargaPersatuan?: number;
+  jumlahTerjual?: number;
+  totalHarga: number;
   keterangan: string;
-  tanggal: Date;
+  tanggal: Date | string;
 }
 
 function formatRupiah(amount: number): string {
@@ -20,14 +59,15 @@ function formatRupiah(amount: number): string {
   }).format(amount);
 }
 
-function formatTanggal(date: Date): string {
+function formatTanggal(date: Date | string): string {
+  const normalizedDate = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(date);
+  }).format(normalizedDate);
 }
 
 function escapeHtml(str: string): string {
@@ -39,8 +79,51 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function normalizeItem(item: LegacyStrukItem): StrukItemData {
+  return {
+    namaKomoditas: item.namaKomoditas ?? item.komoditas?.nama ?? "-",
+    satuanKomoditas: item.satuanKomoditas ?? item.komoditas?.satuan ?? "-",
+    kodeProduksi: item.kodeProduksi ?? item.produksi?.kode_produksi ?? "-",
+    ukuran: item.ukuran ?? item.produksi?.ukuran ?? "-",
+    kualitas: item.kualitas ?? item.produksi?.kualitas ?? "-",
+    asalProduksi:
+      item.asalProduksi ?? item.produksi?.asal_produksi?.nama ?? "-",
+    hargaPersatuan: item.hargaPersatuan ?? item.harga_satuan ?? 0,
+    jumlahTerjual: item.jumlahTerjual ?? 0,
+    totalHarga: item.totalHarga ?? item.sub_total ?? 0,
+  };
+}
+
 export function printStruk(data: StrukData): void {
   const esc = escapeHtml;
+  const items = (data.items ?? []).map(normalizeItem);
+  const hasMultiItems = items.length > 1;
+  const firstItem = items[0] ?? null;
+
+  const singleItem = firstItem ?? {
+    namaKomoditas: data.namaKomoditas ?? "-",
+    satuanKomoditas: data.satuanKomoditas ?? "-",
+    kodeProduksi: data.kodeProduksi ?? "-",
+    ukuran: data.ukuran ?? "-",
+    kualitas: data.kualitas ?? "-",
+    asalProduksi: data.asalProduksi ?? "-",
+    hargaPersatuan: data.hargaPersatuan ?? 0,
+    jumlahTerjual: data.jumlahTerjual ?? 0,
+    totalHarga: data.totalHarga ?? 0,
+  };
+
+  const renderItem = (item: StrukItemData, index: number) => `
+  <div class="item-block">
+    ${items.length > 1 ? `<div class="item-title">Item ${index + 1}</div>` : ""}
+    <div class="row"><span class="label">Komoditas</span><span class="value">${esc(item.namaKomoditas)}</span></div>
+    <div class="row"><span class="label">Asal Produksi</span><span class="value">${esc(item.asalProduksi)}</span></div>
+    <div class="row"><span class="label">Kode Produksi</span><span class="value">${esc(item.kodeProduksi)}</span></div>
+    <div class="row"><span class="label">Ukuran</span><span class="value">${esc(item.ukuran)}</span></div>
+    <div class="row"><span class="label">Kualitas</span><span class="value">${esc(item.kualitas)}</span></div>
+    <div class="row"><span class="label">Harga/Satuan</span><span class="value">${formatRupiah(item.hargaPersatuan)}</span></div>
+    <div class="row"><span class="label">Jumlah</span><span class="value">${item.jumlahTerjual} ${esc(item.satuanKomoditas)}</span></div>
+    <div class="row"><span class="label">Subtotal</span><span class="value">${formatRupiah(item.totalHarga)}</span></div>
+  </div>`;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -63,6 +146,8 @@ export function printStruk(data: StrukData): void {
     .row { display: flex; justify-content: space-between; margin: 2px 0; }
     .label { flex: 1; }
     .value { text-align: right; }
+    .item-block { margin: 4px 0 6px; }
+    .item-title { font-weight: bold; margin: 2px 0 4px; font-size: 10px; }
     .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-top: 4px; }
     .footer { text-align: center; margin-top: 8px; font-size: 10px; }
     @media print {
@@ -82,16 +167,25 @@ export function printStruk(data: StrukData): void {
   <div class="center" style="font-size:10px;">${formatTanggal(data.tanggal)}</div>
   <div class="divider"></div>
 
-  <div class="row"><span class="label">Komoditas</span><span class="value">${esc(data.namaKomoditas)}</span></div>
-  <div class="row"><span class="label">Asal Produksi</span><span class="value">${esc(data.asalProduksi)}</span></div>
-  <div class="row"><span class="label">Kode Produksi</span><span class="value">${esc(data.kodeProduksi)}</span></div>
-  <div class="row"><span class="label">Ukuran</span><span class="value">${esc(data.ukuran)}</span></div>
-  <div class="row"><span class="label">Kualitas</span><span class="value">${esc(data.kualitas)}</span></div>
+  ${
+    hasMultiItems
+      ? `
+      <div class="bold" style="margin-bottom:4px;font-size:10px;">Detail Item</div>
+      ${items.map((item, index) => renderItem(item, index)).join('<div class="divider"></div>')}
+    `
+      : `
+      <div class="row"><span class="label">Komoditas</span><span class="value">${esc(singleItem.namaKomoditas)}</span></div>
+      <div class="row"><span class="label">Asal Produksi</span><span class="value">${esc(singleItem.asalProduksi)}</span></div>
+      <div class="row"><span class="label">Kode Produksi</span><span class="value">${esc(singleItem.kodeProduksi)}</span></div>
+      <div class="row"><span class="label">Ukuran</span><span class="value">${esc(singleItem.ukuran)}</span></div>
+      <div class="row"><span class="label">Kualitas</span><span class="value">${esc(singleItem.kualitas)}</span></div>
 
-  <div class="divider"></div>
+      <div class="divider"></div>
 
-  <div class="row"><span class="label">Harga/Satuan</span><span class="value">${formatRupiah(data.hargaPersatuan)}</span></div>
-  <div class="row"><span class="label">Jumlah</span><span class="value">${data.jumlahTerjual} ${esc(data.satuanKomoditas)}</span></div>
+      <div class="row"><span class="label">Harga/Satuan</span><span class="value">${formatRupiah(singleItem.hargaPersatuan)}</span></div>
+      <div class="row"><span class="label">Jumlah</span><span class="value">${singleItem.jumlahTerjual} ${esc(singleItem.satuanKomoditas)}</span></div>
+    `
+  }
 
   <div class="divider"></div>
 
@@ -118,7 +212,21 @@ export function printStruk(data: StrukData): void {
     return;
   }
 
-  w.addEventListener("load", () => { w.focus(); w.print(); }, { once: true });
+  w.addEventListener(
+    "load",
+    () => {
+      w.focus();
+      w.print();
+    },
+    { once: true },
+  );
   // afterprint fires on both print and cancel, ensuring cleanup always happens
-  w.addEventListener("afterprint", () => { URL.revokeObjectURL(url); w.close(); }, { once: true });
+  w.addEventListener(
+    "afterprint",
+    () => {
+      URL.revokeObjectURL(url);
+      w.close();
+    },
+    { once: true },
+  );
 }

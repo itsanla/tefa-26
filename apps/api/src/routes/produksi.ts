@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import {
   asalProduksiTable,
   komoditasTable,
+  penjualanItemTabel,
   penjualanTable,
   produksiTable,
 } from "../db/schema";
@@ -43,11 +44,16 @@ produksiApp.get("/", async (c) => {
             : Promise.resolve(null),
           db
             .select()
-            .from(penjualanTable)
-            .where(eq(penjualanTable.id_produksi, p.id))
+            .from(penjualanItemTabel)
+            .where(eq(penjualanItemTabel.id_produksi, p.id))
             .all(),
         ]);
-        return convertTimestamps({ ...p, asal_produksi: asal, komoditas, penjualans });
+        return convertTimestamps({
+          ...p,
+          asal_produksi: asal,
+          komoditas,
+          penjualans,
+        });
       }),
     );
 
@@ -80,8 +86,8 @@ produksiApp.get("/:id", async (c) => {
         .get(),
       db
         .select()
-        .from(penjualanTable)
-        .where(eq(penjualanTable.id_produksi, produksi.id))
+        .from(penjualanItemTabel)
+        .where(eq(penjualanItemTabel.id_produksi, produksi.id))
         .all(),
     ]);
 
@@ -109,8 +115,17 @@ produksiApp.post("/", async (c) => {
 
     const v = new Validator();
     v.required(body.id_asal, "id_asal", "ID asal produksi wajib diisi");
-    v.isIntGt(body.id_asal, 0, "id_asal", "ID asal produksi harus berupa angka positif");
-    v.required(body.kode_produksi, "kode_produksi", "Kode produksi wajib diisi");
+    v.isIntGt(
+      body.id_asal,
+      0,
+      "id_asal",
+      "ID asal produksi harus berupa angka positif",
+    );
+    v.required(
+      body.kode_produksi,
+      "kode_produksi",
+      "Kode produksi wajib diisi",
+    );
     v.required(body.ukuran, "ukuran", "Ukuran wajib diisi");
     v.required(body.kualitas, "kualitas", "Kualitas wajib diisi");
 
@@ -126,10 +141,7 @@ produksiApp.post("/", async (c) => {
     const jumlah_diproduksi = Number(body.jumlah_diproduksi);
     const harga_persatuan = Number(body.harga_persatuan);
 
-    if (
-      !Number.isFinite(jumlah_diproduksi) ||
-      jumlah_diproduksi <= 0
-    ) {
+    if (!Number.isFinite(jumlah_diproduksi) || jumlah_diproduksi <= 0) {
       throw new AppError("Jumlah diproduksi harus berupa angka > 0", 400);
     }
     if (!Number.isFinite(harga_persatuan) || harga_persatuan <= 0) {

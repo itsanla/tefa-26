@@ -4,24 +4,29 @@ import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/DataTable";
 import { apiRequest } from "@/services/api.service";
 import { Penjualan, Komoditas } from "@/types";
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   Legend,
   LineChart,
-  Line
+  Line,
 } from "recharts";
 
 // Komponen Card untuk statistik
-const StatCard = ({ title, value, subtitle, color = "blue" }: {
+const StatCard = ({
+  title,
+  value,
+  subtitle,
+  color = "blue",
+}: {
   title: string;
   value: string | number;
   subtitle?: string;
@@ -47,7 +52,9 @@ export default function DashboardKepsek() {
   const [penjualan, setPenjualan] = useState<Penjualan[]>([]);
   const [komoditas, setKomoditas] = useState<Komoditas[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chartPeriod, setChartPeriod] = useState<"7days" | "weekly" | "monthly">("7days");
+  const [chartPeriod, setChartPeriod] = useState<
+    "7days" | "weekly" | "monthly"
+  >("7days");
 
   const fetchData = async () => {
     try {
@@ -70,44 +77,54 @@ export default function DashboardKepsek() {
   // Hitung statistik untuk overview
   const totalPenjualan = penjualan.length;
   const totalKomoditas = komoditas.length;
-  const komoditasAktif = komoditas.filter(k => k.jumlah > 0).length;
+  const komoditasAktif = komoditas.filter((k) => k.jumlah > 0).length;
 
   // Data penjualan terbaru (5 teratas)
   const penjualanTerbaru = penjualan
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, 5);
 
   // Data untuk grafik distribusi per jenis komoditas
-  const distribusiJenis = komoditas.reduce((acc, item) => {
-    const jenisNama = item.jenis.name;
-    if (!acc[jenisNama]) {
-      acc[jenisNama] = 0;
-    }
-    acc[jenisNama] += 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const distribusiJenis = komoditas.reduce(
+    (acc, item) => {
+      const jenisNama = item.jenis.name;
+      if (!acc[jenisNama]) {
+        acc[jenisNama] = 0;
+      }
+      acc[jenisNama] += 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const pieData = Object.entries(distribusiJenis).map(([name, value]) => ({
     name,
     value,
   }));
 
-  // Data untuk grafik komoditas terlaris
-  const komoditasTerlaris = penjualan
-    .reduce((acc, item) => {
-      const nama = item.komoditas?.nama ?? "Tidak diketahui";
-      if (!acc[nama]) {
-        acc[nama] = 0;
-      }
-      acc[nama] += 1;
+  // Data untuk grafik kode produksi terlaris
+  const kodeProduksiTerlaris = penjualan.reduce(
+    (acc, item) => {
+      const kodeList = item.kode_produksi_list ?? [];
+      kodeList.forEach((kode) => {
+        if (!acc[kode]) {
+          acc[kode] = 0;
+        }
+        acc[kode] += 1;
+      });
       return acc;
-    }, {} as Record<string, number>);
+    },
+    {} as Record<string, number>,
+  );
 
-  const barData = Object.entries(komoditasTerlaris)
+  const barData = Object.entries(kodeProduksiTerlaris)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
     .map(([name, value]) => ({
-      name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+      name: name.length > 15 ? name.substring(0, 15) + "..." : name,
       fullName: name,
       transaksi: value,
     }));
@@ -121,29 +138,47 @@ export default function DashboardKepsek() {
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
-        const dateString = date.toISOString().split('T')[0];
+        const dateString = date.toISOString().split("T")[0];
         dataMap[dateString] = { transaksi: 0, revenue: 0 };
       }
 
-      penjualan.forEach(item => {
-        const dateString = item.createdAt.split('T')[0];
+      penjualan.forEach((item) => {
+        const dateString = item.createdAt.split("T")[0];
         if (dataMap[dateString]) {
           dataMap[dateString].transaksi += 1;
           dataMap[dateString].revenue += item.total_harga;
         }
       });
 
-      return Object.entries(dataMap).map(([dateString, data]) => ({
-        name: new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
-        ...data,
-      })).sort((a, b) => new Date(a.name.split(' ')[1] + ' ' + a.name.split(' ')[0]).getTime() - new Date(b.name.split(' ')[1] + ' ' + b.name.split(' ')[0]).getTime());
+      return Object.entries(dataMap)
+        .map(([dateString, data]) => ({
+          name: new Date(dateString).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "short",
+          }),
+          ...data,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(
+              a.name.split(" ")[1] + " " + a.name.split(" ")[0],
+            ).getTime() -
+            new Date(
+              b.name.split(" ")[1] + " " + b.name.split(" ")[0],
+            ).getTime(),
+        );
     } else if (period === "weekly") {
       // Group by week (e.g., "YYYY-WW")
-      penjualan.forEach(item => {
+      penjualan.forEach((item) => {
         const date = new Date(item.createdAt);
         const year = date.getFullYear();
-        const week = Math.ceil((((date.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + new Date(year, 0, 1).getDay() + 1) / 7);
-        const weekString = `${year}-W${week.toString().padStart(2, '0')}`;
+        const week = Math.ceil(
+          ((date.getTime() - new Date(year, 0, 1).getTime()) / 86400000 +
+            new Date(year, 0, 1).getDay() +
+            1) /
+            7,
+        );
+        const weekString = `${year}-W${week.toString().padStart(2, "0")}`;
 
         if (!dataMap[weekString]) {
           dataMap[weekString] = { transaksi: 0, revenue: 0 };
@@ -152,15 +187,17 @@ export default function DashboardKepsek() {
         dataMap[weekString].revenue += item.total_harga;
       });
 
-      return Object.entries(dataMap).map(([weekString, data]) => ({
-        name: `Minggu ${weekString.split('W')[1]} ${weekString.split('-')[0]}`,
-        ...data,
-      })).sort((a, b) => a.name.localeCompare(b.name));
+      return Object.entries(dataMap)
+        .map(([weekString, data]) => ({
+          name: `Minggu ${weekString.split("W")[1]} ${weekString.split("-")[0]}`,
+          ...data,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
     } else if (period === "monthly") {
       // Group by month (e.g., "YYYY-MM")
-      penjualan.forEach(item => {
+      penjualan.forEach((item) => {
         const date = new Date(item.createdAt);
-        const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
 
         if (!dataMap[yearMonth]) {
           dataMap[yearMonth] = { transaksi: 0, revenue: 0 };
@@ -169,10 +206,15 @@ export default function DashboardKepsek() {
         dataMap[yearMonth].revenue += item.total_harga;
       });
 
-      return Object.entries(dataMap).map(([yearMonth, data]) => ({
-        name: new Date(yearMonth).toLocaleDateString('id-ID', { year: 'numeric', month: 'short' }),
-        ...data,
-      })).sort((a, b) => a.name.localeCompare(b.name));
+      return Object.entries(dataMap)
+        .map(([yearMonth, data]) => ({
+          name: new Date(yearMonth).toLocaleDateString("id-ID", {
+            year: "numeric",
+            month: "short",
+          }),
+          ...data,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
     }
     return [];
   };
@@ -180,7 +222,7 @@ export default function DashboardKepsek() {
   const combinedTrendData = getChartDataByPeriod(chartPeriod);
 
   // Warna untuk grafik
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
   if (loading) {
     return (
@@ -192,7 +234,11 @@ export default function DashboardKepsek() {
     );
   }
 
-  const username = document.cookie.split('; ').find(row => row.startsWith('username='))?.split('=')[1] ?? "User"
+  const username =
+    document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("username="))
+      ?.split("=")[1] ?? "User";
 
   return (
     <DashboardLayout title="Manajemen User" role={username}>
@@ -244,15 +290,23 @@ export default function DashboardKepsek() {
                 data={penjualanTerbaru}
                 columns={[
                   {
-                    header: "Komoditas",
-                    accessorKey: "komoditas",
-                    cell: (item: Penjualan) => item.komoditas?.nama,
+                    header: "Jumlah Produk",
+                    accessorKey: "jumlah_produk",
+                    cell: (item: Penjualan) =>
+                      `${item.jumlah_produk ?? item.items?.length ?? 0} produk`,
                   },
                   {
-                    header: "Jumlah",
-                    accessorKey: "jumlah_terjual",
-                    cell: (item: Penjualan) => 
-                      `${item.jumlah_terjual} ${item.komoditas?.satuan}`,
+                    header: "Kode Produksi",
+                    accessorKey: "kode_produksi_list",
+                    cell: (item: Penjualan) => {
+                      const kodeList = item.kode_produksi_list ?? [];
+                      if (kodeList.length === 0) return "-";
+                      const visible = kodeList.slice(0, 2).join(", ");
+                      const moreCount = Math.max(kodeList.length - 2, 0);
+                      return moreCount > 0
+                        ? `${visible} (+${moreCount})`
+                        : visible;
+                    },
                   },
                   {
                     header: "Total Harga",
@@ -264,7 +318,7 @@ export default function DashboardKepsek() {
                     header: "Tanggal",
                     accessorKey: "createdAt",
                     cell: (item: Penjualan) =>
-                      new Date(item.createdAt).toLocaleDateString('id-ID'),
+                      new Date(item.createdAt).toLocaleDateString("id-ID"),
                   },
                 ]}
                 emptyMessage="Belum ada penjualan"
@@ -291,13 +345,18 @@ export default function DashboardKepsek() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${percent !== undefined ? (percent * 100).toFixed(0) : "0"}%`}
+                    label={({ name, percent }) =>
+                      `${name} ${percent !== undefined ? (percent * 100).toFixed(0) : "0"}%`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
                   >
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -310,29 +369,31 @@ export default function DashboardKepsek() {
           <div className="bg-white rounded-lg shadow">
             <div className="p-6 border-b">
               <h2 className="text-lg font-semibold text-gray-800">
-                Komoditas Terlaris
+                Kode Produksi Terlaris
               </h2>
-              <p className="text-sm text-gray-600">Top 5 berdasarkan transaksi</p>
+              <p className="text-sm text-gray-600">
+                Top 5 berdasarkan kemunculan pada transaksi
+              </p>
             </div>
             <div className="p-6">
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="name" 
+                  <XAxis
+                    dataKey="name"
                     tick={{ fontSize: 12 }}
                     angle={-45}
                     textAnchor="end"
                     height={80}
                   />
                   <YAxis />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value, name, props) => [
                       `${value} transaksi`,
-                      'Jumlah Transaksi'
+                      "Jumlah Transaksi",
                     ]}
                     labelFormatter={(label) => {
-                      const item = barData.find(d => d.name === label);
+                      const item = barData.find((d) => d.name === label);
                       return item ? item.fullName : label;
                     }}
                   />
@@ -377,15 +438,29 @@ export default function DashboardKepsek() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis yAxisId="left" stroke="#00C49F" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#FFBB28" tickFormatter={(value: number) => `Rp${new Intl.NumberFormat("id-ID").format(value)}`} />
-                  <Tooltip formatter={((value: any, name: any) => {
-                    if (name === 'transaksi') {
-                      return [`${value} transaksi`, 'Jumlah Transaksi'];
-                    } else if (name === 'revenue') {
-                      return [`Rp${new Intl.NumberFormat("id-ID").format(Number(value))},-`, 'Pendapatan'];
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#FFBB28"
+                    tickFormatter={(value: number) =>
+                      `Rp${new Intl.NumberFormat("id-ID").format(value)}`
                     }
-                    return [value, name];
-                  }) as any} />
+                  />
+                  <Tooltip
+                    formatter={
+                      ((value: any, name: any) => {
+                        if (name === "transaksi") {
+                          return [`${value} transaksi`, "Jumlah Transaksi"];
+                        } else if (name === "revenue") {
+                          return [
+                            `Rp${new Intl.NumberFormat("id-ID").format(Number(value))},-`,
+                            "Pendapatan",
+                          ];
+                        }
+                        return [value, name];
+                      }) as any
+                    }
+                  />
                   <Legend />
                   <Line
                     yAxisId="left"
