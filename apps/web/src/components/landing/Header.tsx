@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Menu, X, ChevronDown, Leaf, User } from 'lucide-react';
+import Image from 'next/image';
+import { Menu, X, ChevronDown, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = () => {
@@ -74,11 +75,10 @@ const Header = () => {
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3 group" aria-label="SMK Negeri 2 Batusangkar - Beranda">
             <div className="relative h-11 w-11 overflow-hidden">
-              <div className={`rounded-xl h-11 w-11 flex items-center justify-center text-white font-bold transition-all duration-300 
-                ${isScrolled ? 'bg-gradient-to-br from-school-primary to-emerald-600' : 'bg-gradient-to-br from-green-500 to-emerald-600'}
+              <div className={`rounded-xl h-11 w-11 flex items-center justify-center overflow-hidden transition-all duration-300 
+                ${isScrolled ? 'bg-white shadow-sm' : 'bg-white/15 backdrop-blur-sm'}
                 group-hover:shadow-lg group-hover:scale-105 group-hover:shadow-green-500/30`}>
-                <Leaf className="w-5 h-5 absolute opacity-20" strokeWidth={1} />
-                <span className="z-10 text-white text-xs font-extrabold tracking-tight">SMK2</span>
+                <Image src="/icon.webp" alt="SMK Negeri 2 Batusangkar" width={36} height={36} className="object-contain" />
               </div>
             </div>
             <div className={`font-bold text-base sm:text-lg transition-all duration-300 ${isScrolled ? 'text-school-primary' : 'text-white'}`}>

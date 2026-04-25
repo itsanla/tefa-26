@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/common/Button';
-import { Input } from '@/components/common/Input';
-import { Skeleton } from '@/components/common/Skeleton';
 import { apiRequest } from '@/services/api.service';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, LogIn, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,16 +39,12 @@ export default function LoginPage() {
         data: formData,
       });
 
-      // Assuming the API returns a token
       if (response.token) {
         document.cookie = `token=${response.token}; path=/; secure; samesite=strict`;
         document.cookie = `role=${response.user.role}; path=/; secure; samesite=strict`;
         document.cookie = `username=${response.user.nama}; path=/; secure; samesite=strict`;
 
-        
-        // Show success toast
         toast.success(`Login berhasil! Selamat datang, ${response.user.nama || 'User'}`);
-        
 
         if (response.user.role === "siswa") {
           router.push('/siswa');
@@ -58,54 +53,73 @@ export default function LoginPage() {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || 'Login gagal. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleBackToHome = () => {
-    router.push('/');
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Back to Home Button */}
-        <div className="flex justify-start">
-          <Button
-            onClick={handleBackToHome}
-            className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-md transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </Button>
-        </div>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <Image
+          src="/image/fotosama.webp"
+          alt=""
+          fill
+          className="object-cover"
+          sizes="100vw"
+          priority
+          aria-hidden="true"
+        />
+        {/* Dark overlay with green tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/90 via-emerald-900/85 to-emerald-950/90" />
+      </div>
 
-        {/* Login Form */}
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
-          <div className="flex justify-center items-center">
-            <div className='mb-10'>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center">
-                Sign in to your account
-              </h2>
+      {/* Decorative floating orbs */}
+      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-400/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-1/2 right-1/3 w-48 h-48 bg-school-accent/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }} />
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-md mx-auto px-4 py-8">
+        {/* Back to Home */}
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors mb-8 group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Kembali ke Beranda</span>
+        </Link>
+
+        {/* Glassmorphism Card */}
+        <div className="relative">
+          {/* Card glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-green-400/10 to-emerald-500/20 rounded-3xl blur-xl" />
+
+          <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl shadow-black/20">
+            {/* Header */}
+            <div className="text-center mb-8">
+              {/* Logo */}
+              <div className="inline-flex items-center justify-center">
+                <Image src="/icon.webp" alt="SMK Negeri 2 Batusangkar" width={100} height={100} className="object-contain" />
+              </div>
+
+              <h1 className="text-2xl font-bold text-white mb-2">
+                Selamat Datang
+              </h1>
+              <p className="text-white/60 text-sm">
+                Masuk ke portal SMK Negeri 2 Batusangkar
+              </p>
             </div>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email address
-              </label>
-              {isLoading ? (
-                <Skeleton className="h-10 w-full mt-1" />
-              ) : (
-                <Input
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Email Field */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1.5">
+                  Email
+                </label>
+                <input
                   id="email"
                   name="email"
                   type="email"
@@ -113,22 +127,19 @@ export default function LoginPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter your email"
+                  placeholder="nama@email.com"
                   disabled={isLoading}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all duration-200 backdrop-blur-sm disabled:opacity-50"
                 />
-              )}
-            </div>
+              </div>
 
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
-              {isLoading ? (
-                <Skeleton className="h-10 w-full mt-1" />
-              ) : (
-                <div className="relative mt-1">
-                  <Input
+              {/* Password Field */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
@@ -136,14 +147,15 @@ export default function LoginPage() {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder="Enter your password"
+                    placeholder="Masukkan password"
                     disabled={isLoading}
-                    className="pr-10"
+                    className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all duration-200 backdrop-blur-sm disabled:opacity-50"
                   />
                   <button
                     type="button"
-                    onClick={togglePasswordVisibility}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/40 hover:text-white/70 transition-colors"
+                    tabIndex={-1}
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -152,33 +164,42 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
               </div>
-            )}
 
-            {/* Submit Button */}
-            <div>
-              {isLoading ? (
-                <div className="w-full">
-                  <Skeleton className="h-10 w-full" />
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-500/15 border border-red-400/30 rounded-xl px-4 py-3 backdrop-blur-sm">
+                  <p className="text-sm text-red-200">{error}</p>
                 </div>
-              ) : (
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  disabled={isLoading || !formData.email || !formData.password}
-                >
-                  Sign in
-                </Button>
               )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading || !formData.email || !formData.password}
+                className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-transparent"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5" />
+                    <span>Masuk</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="mt-6 pt-6 border-t border-white/10 text-center">
+              <p className="text-white/40 text-xs">
+                SMK Negeri 2 Batusangkar &copy; {new Date().getFullYear()}
+              </p>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
