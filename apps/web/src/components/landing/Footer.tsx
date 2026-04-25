@@ -107,7 +107,7 @@ const Footer = () => {
           <ArrowUp className="h-5 w-5 group-hover:-translate-y-1 transition-transform duration-300" />
         </button>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* School Info */}
           <div>
             <div className="mb-6">
@@ -270,6 +270,38 @@ const Footer = () => {
             )}
           </div>
 
+          {/* SEO & Legal Links */}
+          <div>
+            <h3 className="text-lg font-semibold mb-6 text-white border-b border-emerald-700 pb-2">
+              Informasi Publik
+            </h3>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <Link href="/about" className="text-emerald-100/80 hover:text-emerald-200 hover:underline transition-colors">
+                  Tentang Sekolah
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="text-emerald-100/80 hover:text-emerald-200 hover:underline transition-colors">
+                  Kebijakan Privasi (Privacy Policy)
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="text-emerald-100/80 hover:text-emerald-200 hover:underline transition-colors">
+                  Syarat & Ketentuan (Terms of Service)
+                </Link>
+              </li>
+              <li>
+                <Link href="/komoditas" className="text-emerald-100/80 hover:text-emerald-200 hover:underline transition-colors">
+                  Halaman Komoditas
+                </Link>
+              </li>
+            </ul>
+            <p className="mt-4 text-xs leading-relaxed text-emerald-100/60">
+              Halaman-halaman ini membantu mesin pencari memahami struktur situs dan meningkatkan kepercayaan pengguna.
+            </p>
+          </div>
+
         </div>
         
         {/* Map - Full Width Section */}
@@ -293,7 +325,7 @@ const Footer = () => {
           </p>
         </div>
 
-        <div className="border-t border-emerald-800/80 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div className="border-t border-emerald-800/80 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-3">
           <p className="text-emerald-100/70 text-sm text-center md:text-left">
             &copy; {new Date().getFullYear()} Developed by{" "}
             <span className="group relative cursor-pointer text-emerald-300 font-medium hover:underline">
@@ -319,6 +351,14 @@ const Footer = () => {
               </span>
             </span>
           </p>
+          <div className="flex items-center gap-4 text-xs text-emerald-100/70">
+            <Link href="/privacy" className="hover:text-emerald-200 hover:underline transition-colors">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-emerald-200 hover:underline transition-colors">
+              Terms
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
