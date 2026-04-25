@@ -8,16 +8,33 @@ import {
   Receipt,
   AlertCircle,
   Package,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { Komoditas, Penjualan, Produksi } from "@/types";
 import { DataTable } from "@/components/table/DataTable";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
-import ToggleDark from "@/components/common/ToggleDark";
 import { toast } from "sonner";
 import { apiRequest } from "@/services/api.service";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { printStruk } from "@/components/struk/StrukPembelian";
+
+type PenjualanFormItem = {
+  id_komodity: number;
+  id_produksi: number;
+  jumlah_terjual: number;
+  total_harga: number;
+  keterangan: string;
+};
+
+const createEmptyItem = (): PenjualanFormItem => ({
+  id_komodity: 0,
+  id_produksi: 0,
+  jumlah_terjual: 0,
+  total_harga: 0,
+  keterangan: "",
+});
 
 export default function KasirPage() {
   const username =
@@ -31,30 +48,25 @@ export default function KasirPage() {
   const [produksi, setProduksi] = useState<Produksi[]>([]);
   const [penjualan, setPenjualan] = useState<Penjualan[]>([]);
 
-  const [showProdukDropdown, setShowProdukDropdown] = useState(false);
-  const [showProduksiDropdown, setShowProduksiDropdown] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  const [formData, setFormData] = useState<{
-    keterangan: string;
-    id_komodity: number;
-    id_produksi: number;
-    jumlah_terjual: number;
-    total_harga: number;
-  }>({
-    keterangan: "",
-    id_komodity: 0,
-    id_produksi: 0,
-    jumlah_terjual: 0,
-    total_harga: 0,
-  });
+  const [formItems, setFormItems] = useState<PenjualanFormItem[]>([
+    createEmptyItem(),
+  ]);
 
   const [showPenjualan, setShowPenjualan] = useState(false);
   const [cetakStruk, setCetakStruk] = useState(true);
+  const [expandedPenjualanId, setExpandedPenjualanId] = useState<number | null>(
+    null,
+  );
+  const [penjualanDetails, setPenjualanDetails] = useState<
+    Record<number, Penjualan>
+  >({});
+  const [loadingPenjualanDetailId, setLoadingPenjualanDetailId] = useState<
+    number | null
+  >(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Get unique komoditas from produksi data - Fixed property name
@@ -66,10 +78,7 @@ export default function KasirPage() {
     return acc;
   }, [] as Komoditas[]);
 
-  // Get filtered produksi based on selected komoditas - Fixed property name
-  const filteredProduksiByKomoditas = formData.id_komodity
-    ? produksi.filter((prod) => prod.komoditas?.id === formData.id_komodity)
-    : produksi;
+  const grandTotal = formItems.reduce((sum, item) => sum + item.total_harga, 0);
 
   useEffect(() => {
     const fetchPreference = async () => {
@@ -103,50 +112,42 @@ export default function KasirPage() {
       }
     };
 
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest(".dropdown-container")) {
-        setShowProdukDropdown(false);
-        setShowProduksiDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
     fetchPreference();
     fetchData();
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
     };
   }, []);
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!formData.id_komodity) {
-      errors.id_komodity = "Produk harus dipilih";
-    }
-
-    if (!formData.id_produksi) {
-      errors.id_produksi = "Kode produksi harus dipilih";
-    }
-
-    if (!formData.jumlah_terjual || formData.jumlah_terjual <= 0) {
-      errors.jumlah_terjual = "Jumlah harus lebih dari 0";
-    }
-
-    // Validasi stok tersedia dari produksi
-    if (formData.id_produksi && formData.jumlah_terjual) {
-      const selectedProduksi = produksi.find(
-        (p) => p.id === formData.id_produksi,
-      );
-      if (
-        selectedProduksi &&
-        formData.jumlah_terjual > selectedProduksi.jumlah
-      ) {
-        errors.jumlah_terjual = `Stok tidak mencukupi. Tersedia: ${selectedProduksi.jumlah} ${selectedProduksi.komoditas?.satuan}`;
+    formItems.forEach((item, index) => {
+      if (!item.id_komodity) {
+        errors[`${index}.id_komodity`] = "Produk harus dipilih";
       }
-    }
+
+      if (!item.id_produksi) {
+        errors[`${index}.id_produksi`] = "Kode produksi harus dipilih";
+      }
+
+      if (!item.jumlah_terjual || item.jumlah_terjual <= 0) {
+        errors[`${index}.jumlah_terjual`] = "Jumlah harus lebih dari 0";
+      }
+
+      if (item.id_produksi && item.jumlah_terjual) {
+        const selectedProduksi = produksi.find(
+          (p) => p.id === item.id_produksi,
+        );
+        if (selectedProduksi && item.jumlah_terjual > selectedProduksi.jumlah) {
+          errors[`${index}.jumlah_terjual`] =
+            `Stok tidak mencukupi. Tersedia: ${selectedProduksi.jumlah} ${selectedProduksi.komoditas?.satuan}`;
+        }
+      }
+    });
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -168,58 +169,112 @@ export default function KasirPage() {
     }, 500);
   };
 
-  const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
+  const loadPenjualanDetail = async (id: number) => {
+    if (penjualanDetails[id]) return penjualanDetails[id];
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    setLoadingPenjualanDetailId(id);
+    try {
+      const detail = await apiRequest({ endpoint: `/penjualan/${id}` });
+      setPenjualanDetails((current) => ({ ...current, [id]: detail }));
+      return detail;
+    } finally {
+      setLoadingPenjualanDetailId((current) =>
+        current === id ? null : current,
+      );
+    }
+  };
+
+  const togglePenjualanDropdown = async (id: number) => {
+    if (expandedPenjualanId === id) {
+      setExpandedPenjualanId(null);
+      return;
+    }
+
+    setExpandedPenjualanId(id);
+    try {
+      await loadPenjualanDetail(id);
+    } catch (error) {
+      console.error("Gagal memuat detail penjualan:", error);
+      toast.error("Gagal memuat detail item penjualan.");
+      setExpandedPenjualanId(null);
+    }
+  };
+
+  const getProduksiByKomoditas = (idKomoditas: number) => {
+    if (!idKomoditas) return [];
+    return produksi.filter((prod) => prod.komoditas?.id === idKomoditas);
+  };
+
+  const handleItemChange = (
+    index: number,
+    field: keyof PenjualanFormItem,
+    rawValue: string,
   ) => {
-    const { name, value } = e.target;
+    setFormItems((prev) => {
+      const updated = [...prev];
+      const current = { ...updated[index] };
 
-    setFormData((prev) => {
-      let newValue: string | number = value;
+      const numberFields: Array<keyof PenjualanFormItem> = [
+        "id_komodity",
+        "id_produksi",
+        "jumlah_terjual",
+      ];
 
-      if (NUMBER_FIELDS.includes(name)) {
-        const numValue = Number(value);
-        newValue = isNaN(numValue) ? 0 : numValue; // Handle NaN for number fields
+      if (numberFields.includes(field)) {
+        const numValue = Number(rawValue);
+        current[field] = (Number.isNaN(numValue) ? 0 : numValue) as never;
+      } else {
+        current[field] = rawValue as never;
       }
 
-      let newFormData = {
-        ...prev,
-        [name]: newValue,
-      };
-
-      if (name === "jumlah_terjual" || name === "id_produksi") {
-        const currentIdProduksi =
-          name === "id_produksi" ? (newValue as number) : prev.id_produksi;
-        const currentJumlahTerjual =
-          name === "jumlah_terjual"
-            ? (newValue as number)
-            : prev.jumlah_terjual;
-
-        const selectedProduksi = produksi.find(
-          (p) => p.id === currentIdProduksi,
-        );
-
-        // Only set default total_harga if it hasn't been manually set or if id_produksi/jumlah_terjual changes
-        if (
-          selectedProduksi &&
-          currentJumlahTerjual > 0 &&
-          (name === "id_produksi" ||
-            name === "jumlah_terjual" ||
-            prev.total_harga === 0)
-        ) {
-          newFormData.total_harga =
-            selectedProduksi.harga_persatuan * currentJumlahTerjual;
-        } else if (!selectedProduksi || currentJumlahTerjual <= 0) {
-          newFormData.total_harga = 0;
-        }
-      } else if (name === "total_harga") {
-        // Allow manual input for total_harga
-        const numValue = Number(value);
-        newFormData.total_harga = isNaN(numValue) ? 0 : numValue;
+      if (field === "id_komodity") {
+        current.id_produksi = 0;
+        current.jumlah_terjual = 0;
+        current.total_harga = 0;
       }
 
-      return newFormData;
+      if (field === "id_produksi" && !current.id_komodity) {
+        const selectedProd = produksi.find((p) => p.id === current.id_produksi);
+        current.id_komodity = selectedProd?.komoditas?.id ?? 0;
+      }
+
+      const selectedProduksi = produksi.find(
+        (p) => p.id === current.id_produksi,
+      );
+      if (selectedProduksi && current.jumlah_terjual > 0) {
+        current.total_harga =
+          selectedProduksi.harga_persatuan * current.jumlah_terjual;
+      } else {
+        current.total_harga = 0;
+      }
+
+      updated[index] = current;
+      return updated;
+    });
+
+    setFormErrors((prev) => {
+      const next = { ...prev };
+      delete next[`${index}.${String(field)}`];
+      return next;
+    });
+  };
+
+  const addItem = () => {
+    setFormItems((prev) => [...prev, createEmptyItem()]);
+  };
+
+  const removeItem = (index: number) => {
+    if (formItems.length === 1) return;
+    setFormItems((prev) => prev.filter((_, i) => i !== index));
+    setFormErrors((prev) => {
+      const next: Record<string, string> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const [idxStr, field] = key.split(".");
+        const idx = Number(idxStr);
+        if (idx < index) next[key] = value;
+        if (idx > index) next[`${idx - 1}.${field}`] = value;
+      });
+      return next;
     });
   };
 
@@ -236,11 +291,13 @@ export default function KasirPage() {
       setError(null);
 
       const requestBody = {
-        keterangan: formData.keterangan,
-        id_komodity: formData.id_komodity,
-        id_produksi: formData.id_produksi,
-        jumlah_terjual: formData.jumlah_terjual,
-        total_harga: formData.total_harga,
+        items: formItems.map((item) => ({
+          id_komodity: item.id_komodity,
+          id_produksi: item.id_produksi,
+          jumlah_terjual: item.jumlah_terjual,
+          total_harga: item.total_harga,
+          keterangan: item.keterangan,
+        })),
       };
 
       await apiRequest({
@@ -250,24 +307,40 @@ export default function KasirPage() {
       });
 
       if (cetakStruk) {
-        const selectedKomoditas = produksi.find(
-          (p) => p.id === formData.id_produksi,
-        )?.komoditas;
-        const selectedProd = produksi.find(
-          (p) => p.id === formData.id_produksi,
-        );
-        if (selectedKomoditas && selectedProd) {
+        const printableItems = requestBody.items
+          .map((item) => {
+            const selectedProd = produksi.find(
+              (p) => p.id === item.id_produksi,
+            );
+            const selectedKomoditas = selectedProd?.komoditas;
+
+            if (!selectedProd || !selectedKomoditas) return null;
+
+            return {
+              namaKomoditas: selectedKomoditas.nama,
+              satuanKomoditas: selectedKomoditas.satuan,
+              kodeProduksi: selectedProd.kode_produksi,
+              ukuran: selectedProd.ukuran,
+              kualitas: selectedProd.kualitas,
+              asalProduksi: selectedProd.asal_produksi?.nama ?? "-",
+              hargaPersatuan: selectedProd.harga_persatuan,
+              jumlahTerjual: item.jumlah_terjual,
+              totalHarga: item.total_harga,
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+        if (printableItems.length > 0) {
           printStruk({
-            namaKomoditas: selectedKomoditas.nama,
-            satuanKomoditas: selectedKomoditas.satuan,
-            kodeProduksi: selectedProd.kode_produksi,
-            ukuran: selectedProd.ukuran,
-            kualitas: selectedProd.kualitas,
-            asalProduksi: selectedProd.asal_produksi?.nama ?? "-",
-            hargaPersatuan: selectedProd.harga_persatuan,
-            jumlahTerjual: formData.jumlah_terjual,
-            totalHarga: formData.total_harga,
-            keterangan: formData.keterangan,
+            items: printableItems,
+            totalHarga: requestBody.items.reduce(
+              (sum, item) => sum + item.total_harga,
+              0,
+            ),
+            keterangan: requestBody.items
+              .map((item) => item.keterangan.trim())
+              .filter(Boolean)
+              .join(" | "),
             tanggal: new Date(),
           });
         }
@@ -282,16 +355,10 @@ export default function KasirPage() {
       setProduksi(dataProduksi);
 
       // Reset form
-      setFormData({
-        keterangan: "",
-        id_komodity: 0,
-        id_produksi: 0,
-        jumlah_terjual: 0,
-        total_harga: 0,
-      });
+      setFormItems([createEmptyItem()]);
       setFormErrors({});
 
-      toast.success("Transaksi berhasil disimpan");
+      toast.success(`${requestBody.items.length} transaksi berhasil disimpan`);
     } catch (error) {
       console.error("Error creating penjualan:", error);
       const errorMessage = "Transaksi gagal disimpan. Silakan coba lagi.";
@@ -305,35 +372,11 @@ export default function KasirPage() {
   const handlePrintClick = async (id: number) => {
     try {
       setLoading(true);
-      const {
-        namaKomoditas,
-        satuanKomoditas,
-        kodeProduksi,
-        ukuran,
-        kualitas,
-        asalProduksi,
-        hargaPersatuan,
-        jumlahTerjual,
-        totalHarga,
-        keterangan,
-        tanggal,
-      } = await apiRequest({
+      const detail = await apiRequest({
         endpoint: `/penjualan/${id}`,
       });
 
-      printStruk({
-        namaKomoditas,
-        satuanKomoditas,
-        kodeProduksi,
-        ukuran,
-        kualitas,
-        asalProduksi,
-        hargaPersatuan,
-        jumlahTerjual,
-        totalHarga,
-        keterangan,
-        tanggal: new Date(tanggal),
-      });
+      printStruk(detail);
     } catch (err) {
       console.error("Gagal ambil data Penjualan:", err);
       toast.error("Gagal mengambil data penjualan.");
@@ -345,31 +388,50 @@ export default function KasirPage() {
   const penjualanColumns = [
     {
       header: "Produk",
-      accessorKey: "komoditas" as keyof Penjualan,
+      accessorKey: "jumlah_produk" as keyof Penjualan,
       cell: (item: Penjualan) => (
         <div className="flex items-center gap-2">
           <Package size={16} className="text-gray-500" />
-          <span className="font-medium">{item.komoditas?.nama}</span>
+          <span className="font-medium">
+            {item.jumlah_produk ?? item.items?.length ?? 0} produk
+          </span>
         </div>
       ),
     },
     {
       header: "Kode Produksi",
-      accessorKey: "produksi" as keyof Penjualan,
-      cell: (item: Penjualan) => (
-        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
-          {item.produksi?.kode_produksi}
-        </span>
-      ),
-    },
-    {
-      header: "Jumlah Terjual",
-      accessorKey: "jumlah_terjual" as keyof Penjualan,
-      cell: (item: Penjualan) => (
-        <span className="font-medium">
-          {item.jumlah_terjual} {item.komoditas?.satuan}
-        </span>
-      ),
+      accessorKey: "kode_produksi_list" as keyof Penjualan,
+      cell: (item: Penjualan) => {
+        const kodeProduksiList = item.kode_produksi_list ?? [];
+        const visibleCodes = kodeProduksiList.slice(0, 2);
+        const hiddenCount = Math.max(
+          kodeProduksiList.length - visibleCodes.length,
+          0,
+        );
+
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            {visibleCodes.length > 0 ? (
+              visibleCodes.map((kode) => (
+                <span
+                  key={kode}
+                  className="rounded bg-blue-100 px-2 py-1 text-xs font-mono text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                >
+                  {kode}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-500 dark:text-gray-400">-</span>
+            )}
+
+            {hiddenCount > 0 ? (
+              <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                +{hiddenCount} kode lainnya
+              </span>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
       header: "Total harga",
@@ -395,208 +457,108 @@ export default function KasirPage() {
       header: "Aksi",
       accessorKey: "id" as keyof Penjualan,
       cell: (item: Penjualan) => (
-        <button
-          className="bg-blue-600 px-4 py-3 rounded text-white"
-          onClick={() => handlePrintClick(item.id)}
-        >
-          Print
-        </button>
+        <div className="relative flex items-center gap-2 justify-end">
+          <button
+            className="inline-flex items-center gap-1 rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+            onClick={() => togglePenjualanDropdown(item.id)}
+            type="button"
+          >
+            Detail
+            {expandedPenjualanId === item.id ? (
+              <ChevronUp size={16} />
+            ) : (
+              <ChevronDown size={16} />
+            )}
+          </button>
+          <button
+            className="bg-blue-600 px-4 py-2 rounded text-white text-sm"
+            onClick={() => handlePrintClick(item.id)}
+            type="button"
+          >
+            Print
+          </button>
+
+          {expandedPenjualanId === item.id && (
+            <div className="absolute right-0 top-full z-20 mt-2 w-[28rem] rounded-xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+              {loadingPenjualanDetailId === item.id ? (
+                <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                  Memuat item penjualan...
+                </div>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Item Penjualan
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {penjualanDetails[item.id]?.items?.length ?? 0} item
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedPenjualanId(null)}
+                      className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+
+                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                    {(penjualanDetails[item.id]?.items ?? []).length > 0 ? (
+                      penjualanDetails[item.id]!.items!.map((detailItem) => (
+                        <div
+                          key={detailItem.id}
+                          className="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-gray-100">
+                                {detailItem.komoditas?.nama ?? "-"}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {detailItem.produksi?.kode_produksi ?? "-"} ·{" "}
+                                {detailItem.produksi?.ukuran ?? "-"} ·{" "}
+                                {detailItem.produksi?.kualitas ?? "-"}
+                              </p>
+                            </div>
+                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                              {detailItem.jumlah_terjual} pcs
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>
+                              Rp
+                              {new Intl.NumberFormat("id-ID").format(
+                                detailItem.harga_satuan,
+                              )}
+                              ,-
+                            </span>
+                            <span>
+                              Subtotal Rp
+                              {new Intl.NumberFormat("id-ID").format(
+                                detailItem.sub_total,
+                              )}
+                              ,-
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-gray-300 px-3 py-6 text-center text-sm text-gray-500 dark:border-gray-600">
+                        Tidak ada detail item.
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       ),
     },
   ];
-
-  const ProdukSelect = () => {
-    const selectedProduk = uniqueKomoditas.find(
-      (k) => k.id === formData.id_komodity,
-    );
-
-    return (
-      <div className="dropdown-container relative">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Produk *
-        </label>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowProdukDropdown(!showProdukDropdown)}
-            className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between transition-colors ${
-              formErrors.id_komodity
-                ? "border-red-500 dark:border-red-400"
-                : "border-gray-300 dark:border-gray-600"
-            }`}
-          >
-            <span
-              className={
-                selectedProduk
-                  ? "text-gray-900 dark:text-gray-100"
-                  : "text-gray-500"
-              }
-            >
-              {selectedProduk?.nama || "Pilih Produk"}
-            </span>
-            <ChevronDown size={16} />
-          </button>
-
-          {formErrors.id_komodity && (
-            <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-              <AlertCircle size={12} />
-              <span>{formErrors.id_komodity}</span>
-            </div>
-          )}
-
-          {showProdukDropdown && (
-            <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-              {uniqueKomoditas.length > 0 ? (
-                uniqueKomoditas.map((item) => {
-                  const totalStock = produksi
-                    .filter((p) => p.komoditas?.id === item.id)
-                    .reduce((sum, p) => sum + p.jumlah, 0);
-
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          id_komodity: item.id,
-                          id_produksi: 0,
-                        }));
-                        setShowProdukDropdown(false);
-                      }}
-                      className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">{item.nama}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {item.deskripsi}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Total Stok: {totalStock} {item.satuan}
-                          </div>
-                          {totalStock <= 5 && (
-                            <div className="text-xs text-red-500 font-medium">
-                              Stok Menipis!
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-                  Tidak ada produk tersedia
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const ProduksiSelect = () => {
-    const selectedProduksi = produksi.find(
-      (p) => p.id === formData.id_produksi,
-    );
-
-    return (
-      <div className="dropdown-container relative">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Kode Produksi *
-          {!formData.id_komodity && (
-            <span className="text-xs text-gray-500 ml-2">
-              (Pilih produk terlebih dahulu)
-            </span>
-          )}
-        </label>
-        <div className="relative">
-          <button
-            type="button"
-            disabled={!formData.id_komodity}
-            onClick={() => setShowProduksiDropdown(!showProduksiDropdown)}
-            className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between transition-colors ${
-              formErrors.id_produksi
-                ? "border-red-500 dark:border-red-400"
-                : "border-gray-300 dark:border-gray-600"
-            } ${!formData.id_komodity ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            <span
-              className={
-                selectedProduksi
-                  ? "text-gray-900 dark:text-gray-100"
-                  : "text-gray-500"
-              }
-            >
-              {selectedProduksi?.kode_produksi || "Pilih Kode Produksi"}
-            </span>
-            <ChevronDown size={16} />
-          </button>
-
-          {formErrors.id_produksi && (
-            <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-              <AlertCircle size={12} />
-              <span>{formErrors.id_produksi}</span>
-            </div>
-          )}
-
-          {showProduksiDropdown && formData.id_komodity && (
-            <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-              {filteredProduksiByKomoditas.length > 0 ? (
-                filteredProduksiByKomoditas.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        id_produksi: item.id,
-                        id_komodity:
-                          prev.id_komodity || item.komoditas?.id || 0,
-                      }));
-                      setShowProduksiDropdown(false);
-                    }}
-                    className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium font-mono">
-                          {item.kode_produksi}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {item.ukuran} - {item.kualitas}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Stok: {item.jumlah} {item.komoditas?.satuan}
-                        </div>
-                        {item.jumlah <= 5 && (
-                          <div className="text-xs text-red-500 font-medium">
-                            Stok Menipis!
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-                  Tidak ada kode produksi ditemukan
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const selectedProduksi = produksi.find((p) => p.id === formData.id_produksi);
 
   return (
     <div className="min-h-screen text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900">
@@ -625,75 +587,202 @@ export default function KasirPage() {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <ProdukSelect />
-              <ProduksiSelect />
-            </div>
+            {formItems.map((item, index) => {
+              const selectedProduksi = produksi.find(
+                (p) => p.id === item.id_produksi,
+              );
+              const filteredProduksi = getProduksiByKomoditas(item.id_komodity);
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {selectedProduksi ? (
-                    <div>
-                      Jumlah ({selectedProduksi.komoditas?.satuan})
-                      <span className="text-xs text-gray-500 ml-2">
-                        (Tersedia: {selectedProduksi.jumlah}{" "}
-                        {selectedProduksi.komoditas?.satuan})
-                      </span>
-                    </div>
-                  ) : (
-                    <div>Jumlah</div>
-                  )}
-                </label>
-                <Input
-                  type="number"
-                  name="jumlah_terjual"
-                  value={formData.jumlah_terjual || ""}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  min="1"
-                  max={selectedProduksi?.jumlah || undefined}
-                  className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formErrors.jumlah_terjual
-                      ? "border-red-500 dark:border-red-400"
-                      : "border-gray-300 dark:border-gray-600"
-                  }`}
-                />
-                {formErrors.jumlah_terjual && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                    <AlertCircle size={12} />
-                    <span>{formErrors.jumlah_terjual}</span>
+              return (
+                <div
+                  key={`item-${index}`}
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-gray-800 dark:text-gray-200">
+                      Item {index + 1}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      disabled={formItems.length === 1}
+                      className="inline-flex items-center gap-1 text-sm text-red-600 disabled:text-gray-400"
+                    >
+                      <Trash2 size={16} />
+                      Hapus
+                    </button>
                   </div>
-                )}
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Keterangan
-                </label>
-                <Input
-                  type="text"
-                  name="keterangan"
-                  value={formData.keterangan || ""}
-                  onChange={handleInputChange}
-                  placeholder="Keterangan tambahan (opsional)"
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Produk *
+                      </label>
+                      <select
+                        value={item.id_komodity || ""}
+                        onChange={(e) =>
+                          handleItemChange(index, "id_komodity", e.target.value)
+                        }
+                        className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${
+                          formErrors[`${index}.id_komodity`]
+                            ? "border-red-500 dark:border-red-400"
+                            : "border-gray-300 dark:border-gray-600"
+                        }`}
+                      >
+                        <option value="">Pilih Produk</option>
+                        {uniqueKomoditas.map((komoditas) => {
+                          const totalStock = produksi
+                            .filter((p) => p.komoditas?.id === komoditas.id)
+                            .reduce((sum, p) => sum + p.jumlah, 0);
+                          return (
+                            <option key={komoditas.id} value={komoditas.id}>
+                              {komoditas.nama} (Stok: {totalStock}{" "}
+                              {komoditas.satuan})
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {formErrors[`${index}.id_komodity`] && (
+                        <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+                          <AlertCircle size={12} />
+                          <span>{formErrors[`${index}.id_komodity`]}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Kode Produksi *
+                      </label>
+                      <select
+                        value={item.id_produksi || ""}
+                        disabled={!item.id_komodity}
+                        onChange={(e) =>
+                          handleItemChange(index, "id_produksi", e.target.value)
+                        }
+                        className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${
+                          formErrors[`${index}.id_produksi`]
+                            ? "border-red-500 dark:border-red-400"
+                            : "border-gray-300 dark:border-gray-600"
+                        } ${!item.id_komodity ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <option value="">
+                          {!item.id_komodity
+                            ? "Pilih produk terlebih dahulu"
+                            : "Pilih Kode Produksi"}
+                        </option>
+                        {filteredProduksi.map((prod) => (
+                          <option key={prod.id} value={prod.id}>
+                            {prod.kode_produksi} - {prod.ukuran} -{" "}
+                            {prod.kualitas} (Stok: {prod.jumlah})
+                          </option>
+                        ))}
+                      </select>
+                      {formErrors[`${index}.id_produksi`] && (
+                        <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+                          <AlertCircle size={12} />
+                          <span>{formErrors[`${index}.id_produksi`]}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Jumlah
+                        {selectedProduksi
+                          ? ` (${selectedProduksi.komoditas?.satuan})`
+                          : ""}{" "}
+                        *
+                      </label>
+                      <Input
+                        type="number"
+                        value={item.jumlah_terjual || ""}
+                        onChange={(e) =>
+                          handleItemChange(
+                            index,
+                            "jumlah_terjual",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="0"
+                        min="1"
+                        max={selectedProduksi?.jumlah || undefined}
+                        className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${
+                          formErrors[`${index}.jumlah_terjual`]
+                            ? "border-red-500 dark:border-red-400"
+                            : "border-gray-300 dark:border-gray-600"
+                        }`}
+                      />
+                      {selectedProduksi && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Tersedia: {selectedProduksi.jumlah}{" "}
+                          {selectedProduksi.komoditas?.satuan}
+                        </p>
+                      )}
+                      {formErrors[`${index}.jumlah_terjual`] && (
+                        <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+                          <AlertCircle size={12} />
+                          <span>{formErrors[`${index}.jumlah_terjual`]}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Keterangan
+                      </label>
+                      <Input
+                        type="text"
+                        value={item.keterangan || ""}
+                        onChange={(e) =>
+                          handleItemChange(index, "keterangan", e.target.value)
+                        }
+                        placeholder="Keterangan tambahan (opsional)"
+                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Total Harga
+                      </label>
+                      <Input
+                        type="text"
+                        value={
+                          item.total_harga
+                            ? `Rp${new Intl.NumberFormat("id-ID").format(item.total_harga)}`
+                            : ""
+                        }
+                        placeholder="0"
+                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                        disabled
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={addItem}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-700"
+              >
+                <Plus size={16} />
+                Tambah Produk
+              </button>
+
+              <div className="text-right">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Total Semua Produk
+                </p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Rp{new Intl.NumberFormat("id-ID").format(grandTotal)}
+                </p>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Total Harga
-              </label>
-              <Input
-                type="number"
-                name="total_harga"
-                value={formData.total_harga || ""}
-                onChange={handleInputChange}
-                placeholder="0"
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled
-              />
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">

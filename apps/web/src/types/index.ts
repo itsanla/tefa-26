@@ -53,17 +53,34 @@ export interface Produksi {
   komoditas: Komoditas;
 }
 
-export interface Penjualan {
+export interface PenjualanItem {
   id: number;
+  id_penjualan: number;
   id_komodity: number;
-  jumlah_terjual: number;
   id_produksi: number;
-  total_harga: number;
-  keterangan: string;
+  jumlah_terjual: number;
+  harga_satuan: number;
+  sub_total: number;
   createdAt: string;
   updatedAt: string;
   komoditas?: Komoditas;
   produksi?: Produksi;
+}
+
+export interface Penjualan {
+  id: number;
+  total_harga: number;
+  keterangan: string;
+  createdAt: string;
+  updatedAt: string;
+  jumlah_produk?: number;
+  kode_produksi_list?: string[];
+  id_komodity?: number;
+  jumlah_terjual?: number;
+  id_produksi?: number;
+  komoditas?: Komoditas;
+  produksi?: Produksi;
+  items?: PenjualanItem[];
 }
 
 export interface Barang {

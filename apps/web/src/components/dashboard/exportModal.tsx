@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx-js-style";
 
 interface ExportModalProps {
@@ -12,6 +12,55 @@ interface ExportModalProps {
 export default function ExportModal({ barangList, onClose, isOpen }: ExportModalProps) {
     const [selectedMonth, setSelectedMonth] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const monthFormatter = useMemo(
+        () => new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }),
+        [],
+    );
+
+    const getMonthKey = (value: string | number | Date) => {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return null;
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        return `${year}-${month}`;
+    };
+
+    const monthOptions = useMemo(() => {
+        if (!Array.isArray(barangList)) return [];
+
+        const uniqueMonths = new Set<string>();
+        for (const item of barangList) {
+            const monthKey = getMonthKey(item?.createdAt);
+            if (monthKey) uniqueMonths.add(monthKey);
+        }
+
+        return Array.from(uniqueMonths)
+            .sort((a, b) => b.localeCompare(a))
+            .map((value) => {
+                const [year, month] = value.split("-").map(Number);
+                const date = new Date(year, month - 1, 1);
+                return {
+                    value,
+                    label: monthFormatter.format(date),
+                };
+            });
+    }, [barangList, monthFormatter]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        if (monthOptions.length === 0) {
+            setSelectedMonth("");
+            return;
+        }
+
+        const isValidSelection = monthOptions.some((month) => month.value === selectedMonth);
+        if (!isValidSelection) {
+            setSelectedMonth(monthOptions[0].value);
+        }
+    }, [isOpen, monthOptions, selectedMonth]);
 
     if (!isOpen) return null;
 
@@ -33,11 +82,7 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
         setLoading(true);
 
         try {
-            const filteredData = barangList.filter((item) => {
-                const date = new Date(item.createdAt);
-                const monthString = date.toISOString().slice(0, 7);
-                return monthString === selectedMonth;
-            });
+            const filteredData = barangList.filter((item) => getMonthKey(item.createdAt) === selectedMonth);
 
             if (filteredData.length === 0) {
                 alert("Tidak ada data barang pada bulan ini.");
@@ -49,14 +94,11 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
                 No: index + 1,
                 "Tanggal": new Date(item.createdAt).toLocaleDateString("id-ID"),
                 "Bulan": new Date(item.createdAt).toLocaleString("default", { month: "short" }),
-                "Asal Kebun": item?.produksi?.asal_produksi?.nama || "-",
-                "Kode Produksi": item?.produksi?.kode_produksi || "-",
-                Komoditas: item?.komoditas?.nama || "-",
-                Jenis: item?.komoditas?.jenis?.name || "-",
-                Ukuran: item?.produksi?.ukuran || "-",
-                "Jumlah Terjual": item?.jumlah_terjual ?? 0,
-                Kualitas: item?.produksi?.kualitas || "-",
-                Produksi: item?.produksi?.asal_produksi?.nama || "-",
+                "Jumlah Produk": item?.jumlah_produk ?? item?.items?.length ?? 0,
+                "Kode Produksi": Array.isArray(item?.kode_produksi_list) && item.kode_produksi_list.length > 0
+                    ? item.kode_produksi_list.join(", ")
+                    : "-",
+                "Total Harga": item?.total_harga ?? 0,
                 Keterangan: item?.keterangan || "-",
             }));
 
@@ -112,9 +154,9 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
             worksheet['!cols'] = colWidths;
 
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "barang");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "penjualan");
 
-            XLSX.writeFile(workbook, `Laporan-barang-${selectedMonth}.xlsx`);
+            XLSX.writeFile(workbook, `Laporan-penjualan-${selectedMonth}.xlsx`);
             onClose();
         } catch (err) {
             console.error("Gagal mengekspor data:", err);
@@ -138,11 +180,7 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
         setLoading(true);
 
         try {
-            const filteredData = barangList.filter((item) => {
-                const date = new Date(item.createdAt);
-                const monthString = date.toISOString().slice(0, 7);
-                return monthString === selectedMonth;
-            });
+            const filteredData = barangList.filter((item) => getMonthKey(item.createdAt) === selectedMonth);
 
             if (filteredData.length === 0) {
                 alert("Tidak ada data barang pada bulan ini.");
@@ -154,14 +192,11 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
                 index + 1,
                 new Date(item.createdAt).toLocaleDateString("id-ID"),
                 new Date(item.createdAt).toLocaleString("default", { month: "short" }),
-                item?.produksi?.asal_produksi?.nama || "-",
-                item?.produksi?.kode_produksi || "-",
-                item?.komoditas?.nama || "-",
-                item?.komoditas?.jenis?.name || "-",
-                item?.produksi?.ukuran || "-",
-                item?.jumlah_terjual ?? 0,
-                item?.produksi?.kualitas || "-",
-                item?.produksi?.asal_produksi?.nama || "-",
+                item?.jumlah_produk ?? item?.items?.length ?? 0,
+                Array.isArray(item?.kode_produksi_list) && item.kode_produksi_list.length > 0
+                    ? item.kode_produksi_list.join(", ")
+                    : "-",
+                item?.total_harga ?? 0,
                 item?.keterangan || "-",
             ]));
 
@@ -170,9 +205,7 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
 
             autoTable(doc, {
                 head: [[
-                    "No", "Tanggal", "Bulan", "Asal Kebun", "Kode Produksi",
-                    "Komoditas", "Jenis", "Ukuran", "Jumlah Terjual",
-                    "Kualitas", "Produksi", "Keterangan"
+                    "No", "Tanggal", "Bulan", "Jumlah Produk", "Kode Produksi", "Total Harga", "Keterangan"
                 ]],
                 body: pdfData,
                 styles: {
@@ -195,7 +228,7 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
                 margin: { top: 20 }
             });
 
-            doc.save(`Laporan-barang-${selectedMonth}.pdf`);
+            doc.save(`Laporan-penjualan-${selectedMonth}.pdf`);
             onClose();
         } catch (error) {
             console.error("Gagal ekspor PDF:", error);
@@ -209,17 +242,26 @@ export default function ExportModal({ barangList, onClose, isOpen }: ExportModal
     return (
         <div className="fixed inset-0 z-[9999] bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex justify-center items-center">
             <div className="bg-white rounded-xl p-6 w-96 shadow-xl">
-                <h2 className="text-lg font-semibold mb-4">Export Laporan barang</h2>
+                <h2 className="text-lg font-semibold mb-4">Export Laporan Penjualan</h2>
                 <form onSubmit={handleExport} className="space-y-4">
                     <label className="block text-sm mb-1 text-gray-700 dark:text-gray-200">
                         Pilih Bulan
                     </label>
-                    <input
-                        type="month"
+                    <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
                         className="w-full p-2 border rounded-md dark:bg-gray-900 dark:text-white"
-                    />
+                        disabled={monthOptions.length === 0}
+                    >
+                        {monthOptions.length === 0 ? (
+                            <option value="">Belum ada data bulan</option>
+                        ) : null}
+                        {monthOptions.map((month) => (
+                            <option key={month.value} value={month.value}>
+                                {month.label}
+                            </option>
+                        ))}
+                    </select>
 
                     <div className="flex justify-end gap-2">
                         <button
