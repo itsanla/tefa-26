@@ -4,7 +4,7 @@ const shimmer = "relative overflow-hidden before:absolute before:inset-0 before:
 
 export const HeroSkeleton = () => (
   <section className="relative h-screen flex items-center justify-center bg-emerald-950">
-    <div className="container mx-auto px-4 relative z-20">
+    <div className="container mx-auto relative z-20">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         <div className="text-left space-y-6">
           <div className={`h-8 w-48 rounded-full bg-emerald-800/60 ${shimmer}`} />
@@ -36,7 +36,7 @@ export const SectionSkeleton = ({ dark = false }: { dark?: boolean }) => {
   
   return (
     <section className={`py-24 ${dark ? 'bg-emerald-900' : 'bg-gray-50'}`}>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto">
         <div className="text-center mb-16 space-y-4">
           <div className={`h-6 w-32 rounded-full ${bgLight} mx-auto ${shimmer}`} />
           <div className={`h-10 w-64 rounded-lg ${bg} mx-auto ${shimmer}`} />
@@ -61,7 +61,7 @@ export const SectionSkeleton = ({ dark = false }: { dark?: boolean }) => {
 
 export const TefaSkeleton = () => (
   <section className="relative bg-gradient-to-b from-emerald-900 to-green-800 py-20">
-    <div className="container mx-auto px-4 relative z-10">
+    <div className="container mx-auto relative z-10">
       <div className="text-center mb-12 space-y-4">
         <div className={`h-8 w-40 rounded-full bg-white/10 mx-auto ${shimmer}`} />
         <div className={`h-12 w-80 max-w-full rounded-lg bg-white/15 mx-auto ${shimmer}`} />
@@ -92,7 +92,7 @@ export const TefaSkeleton = () => (
 
 export const ProfileSkeleton = () => (
   <section className="py-24 bg-gradient-to-b from-white to-emerald-50">
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto">
       <div className="text-center mb-16 space-y-4">
         <div className={`h-6 w-28 rounded-full bg-green-100 mx-auto ${shimmer}`} />
         <div className={`h-10 w-56 rounded-lg bg-gray-200 mx-auto ${shimmer}`} />
@@ -132,7 +132,7 @@ export const ProfileSkeleton = () => (
 
 export const FooterSkeleton = () => (
   <footer className="bg-emerald-950 py-20">
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
         {[1, 2, 3].map((i) => (
           <div key={i} className="space-y-4">

@@ -284,7 +284,7 @@ const InfoSekolah = () => {
 				</svg>
 			</motion.div>
 
-			<div className="container mx-auto px-4" ref={ref}>
+			<div className="container mx-auto" ref={ref}>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: inView ? 1 : 0, y: inView ? 0 : 20 }}

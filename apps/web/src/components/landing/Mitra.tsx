@@ -226,7 +226,7 @@ const Mitras = () => {
 				/>
 			</div>
 
-			<div className="container mx-auto px-4 relative z-10">
+			<div className="container mx-auto relative z-10">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: inView ? 1 : 0, y: inView ? 0 : 20 }}

@@ -63,7 +63,7 @@ const HeroSection = () => {
       />
 
       {/* Hero Content */}
-      <div className="container mx-auto px-4 sm:px-6 relative z-20 text-white">
+      <div className="container mx-auto relative z-20 text-white">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="text-left">
             <motion.div

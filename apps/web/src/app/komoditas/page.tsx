@@ -170,7 +170,7 @@ const KomoditasPage = () => {
         <div className="absolute top-10 left-10 w-80 h-80 bg-emerald-700/50 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-0 right-10 w-60 h-60 bg-emerald-600/40 rounded-full blur-[80px]"></div>
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto relative z-10">
           <div className="flex items-center mb-6">
             <Link
               href="/"
@@ -225,7 +225,7 @@ const KomoditasPage = () => {
 
       {/* Catalog grid section */}
       <div className="py-16" ref={ref}>
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />

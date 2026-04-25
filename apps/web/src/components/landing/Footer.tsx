@@ -93,7 +93,7 @@ const Footer = () => {
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-full h-8 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSI1MHB4IiB2aWV3Qm94PSIwIDAgMTI4MCAxNDAiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0iI2ZmZmZmZiI+PHBhdGggZD0iTTAgNTEuNzZjMzYuMjEtMi4yNSA3Ny41Ny0zLjU4IDEyNi40Mi0zLjU4IDMyMCAwIDMyMCA1NyA2NDAgNTcgMjcxLjE1IDAgMzEyLjU4LTQwLjkxIDUxMy41OC01My40VjBIMFoiIGZpbGwtb3BhY2l0eT0iLjMiLz48cGF0aCBkPSJNMCAyNC4zMWM0My40Ni01LjY5IDk0LjU2LTkuMjUgMTU4LjQyLTkuMjUgMzIwIDAgMzIwIDg5LjI0IDY0MCA4OS4yNCAyNTYuMTMgMCAzMDcuMjgtNTcuMTYgNDgxLjU4LTgwVjBIMFoiIGZpbGwtb3BhY2l0eT0iLjUiLz48cGF0aCBkPSJNMCAwdjMuNEMyOC4yIDEuNiA1OS40LjU5IDk0LjQyLjU5YzMyMCAwIDMyMCA4NC4zIDY0MCA4NC4zIDI4NSAwIDMxNi4xNy02Ni44NSA1NDUuNTgtODEuNDlWMFoiLz48L2c+PC9zdmc+')]"></div>
 
-      <div className="container mx-auto px-4 py-20 relative">
+      <div className="container mx-auto py-20 relative">
         {/* Scroll to top button */}
         <button
           onClick={scrollToTop}
@@ -282,6 +282,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link href="/pengembang" className="text-emerald-100/80 hover:text-emerald-200 hover:underline transition-colors">
+                  Tim Pengembang
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="text-emerald-100/80 hover:text-emerald-200 hover:underline transition-colors">
                   Kebijakan Privasi (Privacy Policy)
                 </Link>
@@ -337,6 +342,10 @@ const Footer = () => {
                 Defni, S.Si., M.Kom.
                 <br />
                 Ainil Mardiah, S.Kom., M.Cs
+                <br />
+                Anla Harpanda
+                <br />
+                Furqon august seventeen
                 <br />
                 Firman Ardiyansyah
                 <br />

@@ -60,6 +60,7 @@ const Header = () => {
     { name: 'Jurusan', href: '#jurusan' },
     { name: 'Mitra', href: '#mitra' },
     { name: 'Kontak', href: '#kontak' },
+    { name: 'Pengembang', href: '/pengembang' },
   ];
 
   return (
@@ -71,7 +72,7 @@ const Header = () => {
       }`}
       role="banner"
     >
-      <div className="container mx-auto px-4 sm:px-6">
+      <div className="container mx-auto">
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3 group" aria-label="SMK Negeri 2 Batusangkar - Beranda">
             <div className="relative h-11 w-11 overflow-hidden">
