@@ -21,8 +21,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-
-  # ── Web (Next.js static export served by nginx) ─────────────────────────────
   web:
     build:
       context: ./apps/web
