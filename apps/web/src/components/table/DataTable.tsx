@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Plus } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  Search,
+  Plus,
+} from "lucide-react";
 
 interface DataTableProps<T> {
   data: T[];
@@ -17,6 +23,9 @@ interface DataTableProps<T> {
     totalPages: number;
     onPageChange: (page: number) => void;
   };
+  searchTerm?: string;
+  onSearchTermChange?: (value: string) => void;
+  searchPlaceholder?: string;
   emptyMessage?: string;
   loading?: boolean;
   _create?: () => void;
@@ -36,6 +45,9 @@ export function DataTable<T>({
   _create,
   pageSize = 10,
   serverPagination,
+  searchTerm: controlledSearchTerm,
+  onSearchTermChange,
+  searchPlaceholder = "Cari...",
   loading,
   emptyMessage = "Tidak ada data ditemukan.",
   title = "Daftar Data",
@@ -61,8 +73,10 @@ export function DataTable<T>({
 
   const handleSort = (key: keyof T) => {
     let direction: SortDirection = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
-    else if (sortConfig.key === key && sortConfig.direction === "desc") direction = null;
+    if (sortConfig.key === key && sortConfig.direction === "asc")
+      direction = "desc";
+    else if (sortConfig.key === key && sortConfig.direction === "desc")
+      direction = null;
     setSortConfig({ key, direction });
     if (serverPagination) serverPagination.onPageChange(1);
     else setCurrentPage(1);
@@ -70,19 +84,30 @@ export function DataTable<T>({
 
   const getSortIcon = (columnKey: keyof T) => {
     if (sortConfig.key !== columnKey)
-      return <ChevronsUpDown className="w-3.5 h-3.5" style={{ opacity: 0.4 }} />;
+      return (
+        <ChevronsUpDown className="w-3.5 h-3.5" style={{ opacity: 0.4 }} />
+      );
     if (sortConfig.direction === "asc")
       return <ChevronUp className="w-3.5 h-3.5" style={{ color: "#16A34A" }} />;
     if (sortConfig.direction === "desc")
-      return <ChevronDown className="w-3.5 h-3.5" style={{ color: "#16A34A" }} />;
+      return (
+        <ChevronDown className="w-3.5 h-3.5" style={{ color: "#16A34A" }} />
+      );
     return <ChevronsUpDown className="w-3.5 h-3.5" style={{ opacity: 0.4 }} />;
   };
 
-  const filteredData = data.filter((item: any) =>
-    Object.values(item).some((value: any) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    )
+  const activeSearchTerm = controlledSearchTerm ?? searchTerm;
+  const shouldSkipLocalSearch = Boolean(
+    controlledSearchTerm !== undefined && onSearchTermChange,
   );
+
+  const filteredData = shouldSkipLocalSearch
+    ? data
+    : data.filter((item: any) =>
+        Object.values(item).some((value: any) =>
+          String(value).toLowerCase().includes(activeSearchTerm.toLowerCase()),
+        ),
+      );
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (!sortConfig.key || !sortConfig.direction) return 0;
@@ -107,7 +132,9 @@ export function DataTable<T>({
   const totalPages = serverPagination
     ? serverPagination.totalPages
     : Math.max(1, Math.ceil(sortedData.length / effectivePageSize));
-  const totalItems = serverPagination ? serverPagination.totalItems : sortedData.length;
+  const totalItems = serverPagination
+    ? serverPagination.totalItems
+    : sortedData.length;
   const pageData = serverPagination
     ? sortedData
     : sortedData.slice(
@@ -142,13 +169,18 @@ export function DataTable<T>({
           />
           <input
             type="text"
-            value={searchTerm}
+            value={activeSearchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
+              const nextValue = e.target.value;
+              if (onSearchTermChange) {
+                onSearchTermChange(nextValue);
+              } else {
+                setSearchTerm(nextValue);
+              }
               if (serverPagination) serverPagination.onPageChange(1);
               else setCurrentPage(1);
             }}
-            placeholder="Cari..."
+            placeholder={searchPlaceholder}
             style={{
               padding: "11px 14px 11px 36px",
               borderRadius: 12,
@@ -162,6 +194,7 @@ export function DataTable<T>({
               transition: "all .15s",
             }}
             className="dt-input"
+            name="search"
           />
         </div>
 
@@ -209,7 +242,8 @@ export function DataTable<T>({
             <thead>
               <tr style={{ background: "#F9FAFB" }}>
                 {columns.map((col, i) => {
-                  const isSorted = sortConfig.key === col.accessorKey && sortConfig.direction;
+                  const isSorted =
+                    sortConfig.key === col.accessorKey && sortConfig.direction;
                   return (
                     <th
                       key={i}
@@ -303,7 +337,9 @@ export function DataTable<T>({
                     className="dt-row"
                     style={{
                       borderBottom: "1px solid #F9FAFB",
-                      animation: shouldAnimate ? `dt-rowIn .3s ${rowIdx * 0.03}s ease both` : 'none',
+                      animation: shouldAnimate
+                        ? `dt-rowIn .3s ${rowIdx * 0.03}s ease both`
+                        : "none",
                     }}
                   >
                     {columns.map((col, colIdx) => (
@@ -342,8 +378,12 @@ export function DataTable<T>({
             Menampilkan{" "}
             {totalItems === 0
               ? 0
-              : Math.min((effectivePage - 1) * effectivePageSize + 1, totalItems)}{" "}
-            – {Math.min(effectivePage * effectivePageSize, totalItems)} dari {totalItems}
+              : Math.min(
+                  (effectivePage - 1) * effectivePageSize + 1,
+                  totalItems,
+                )}{" "}
+            – {Math.min(effectivePage * effectivePageSize, totalItems)} dari{" "}
+            {totalItems}
           </span>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button
@@ -412,18 +452,18 @@ export function DataTable<T>({
           }
         }
         .dt-row:hover {
-          background: #F9FBF9;
+          background: #f9fbf9;
         }
         .dt-sort-th:hover {
-          color: #16A34A !important;
+          color: #16a34a !important;
         }
         .dt-input:focus {
-          border-color: #16A34A !important;
+          border-color: #16a34a !important;
           background: #fff !important;
           box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12) !important;
         }
         .dt-btn-green {
-          background: #16A34A;
+          background: #16a34a;
           color: #fff;
           border: none;
           border-radius: 12px;
@@ -435,7 +475,9 @@ export function DataTable<T>({
           align-items: center;
           gap: 7px;
           font-family: inherit;
-          transition: transform .15s, box-shadow .15s;
+          transition:
+            transform 0.15s,
+            box-shadow 0.15s;
           box-shadow: 0 2px 10px rgba(22, 163, 74, 0.3);
         }
         .dt-btn-green:hover {
@@ -448,18 +490,18 @@ export function DataTable<T>({
         .dt-page-btn {
           padding: 6px 14px;
           border-radius: 9px;
-          border: 1.5px solid #E5E7EB;
+          border: 1.5px solid #e5e7eb;
           background: #fff;
           font-size: 13px;
           font-weight: 600;
           color: #374151;
           cursor: pointer;
           font-family: inherit;
-          transition: all .15s;
+          transition: all 0.15s;
         }
         .dt-page-btn:hover:not(:disabled) {
-          border-color: #16A34A;
-          color: #16A34A;
+          border-color: #16a34a;
+          color: #16a34a;
         }
         .dt-page-btn:disabled {
           cursor: not-allowed;

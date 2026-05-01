@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   asalProduksiTable,
@@ -181,7 +181,6 @@ async function loadPenjualanDetail(
     }),
   );
 
-
   return convertTimestamps({
     id: summary.id,
     total_harga: summary.total_harga,
@@ -211,11 +210,101 @@ type PenjualanListProduksi = {
   kode_produksi: string;
 };
 
+function buildLowercaseContains(column: unknown, search: string) {
+  const normalizedSearch = search.trim().toLowerCase();
+  if (!normalizedSearch) return undefined;
+
+  return sql`instr(lower(${column}), ${normalizedSearch}) > 0`;
+}
+
+function buildPenjualanSearchCondition(search: string) {
+  const trimmedSearch = search.trim();
+  if (!trimmedSearch) return undefined;
+
+  const conditions = [
+    buildLowercaseContains(penjualanTable.keterangan, trimmedSearch),
+  ];
+
+  if (/^\d+$/.test(trimmedSearch)) {
+    conditions.unshift(eq(penjualanTable.id, Number(trimmedSearch)));
+  }
+
+  return or(
+    ...conditions.filter(
+      (condition): condition is NonNullable<typeof condition> =>
+        Boolean(condition),
+    ),
+  );
+}
+
+function buildProduksiSearchCondition(search: string) {
+  const trimmedSearch = search.trim();
+  if (!trimmedSearch) return undefined;
+
+  const conditions = [
+    buildLowercaseContains(produksiTable.kode_produksi, trimmedSearch),
+    buildLowercaseContains(produksiTable.kualitas, trimmedSearch),
+    buildLowercaseContains(produksiTable.ukuran, trimmedSearch),
+  ].filter((condition): condition is NonNullable<typeof condition> =>
+    Boolean(condition),
+  );
+
+  return conditions.length > 0 ? or(...conditions) : undefined;
+}
+
 async function loadPenjualanListRows(
   db: any,
   pageSize: number,
   offset: number,
+  search: string,
 ) {
+  const trimmedSearch = search.trim();
+  const penjualanSearchCondition = buildPenjualanSearchCondition(trimmedSearch);
+  const produksiSearchCondition = buildProduksiSearchCondition(trimmedSearch);
+
+  let headerIds: number[] = [];
+
+  if (penjualanSearchCondition || produksiSearchCondition) {
+    const matchedHeaders = await db
+      .select({ id: penjualanTable.id })
+      .from(penjualanTable)
+      .where(penjualanSearchCondition)
+      .all();
+
+    const matchedItemPenjualan = await db
+      .select({ id_penjualan: penjualanItemTabel.id_penjualan })
+      .from(penjualanItemTabel)
+      .innerJoin(
+        produksiTable,
+        eq(produksiTable.id, penjualanItemTabel.id_produksi),
+      )
+      .where(produksiSearchCondition)
+      .all();
+
+    headerIds = Array.from(
+      new Set([
+        ...(matchedHeaders as Array<{ id: number }>).map((row) => row.id),
+        ...(matchedItemPenjualan as Array<{ id_penjualan: number }>).map(
+          (row) => row.id_penjualan,
+        ),
+      ]),
+    );
+  } else {
+    const headerRows = await db
+      .select({ id: penjualanTable.id })
+      .from(penjualanTable)
+      .orderBy(desc(penjualanTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
+      .all();
+
+    headerIds = (headerRows as Array<{ id: number }>).map((row) => row.id);
+  }
+
+  if (headerIds.length === 0) {
+    return [] as PenjualanListHeader[];
+  }
+
   const headers = await db
     .select({
       id: penjualanTable.id,
@@ -225,15 +314,15 @@ async function loadPenjualanListRows(
       updatedAt: penjualanTable.updatedAt,
     })
     .from(penjualanTable)
+    .where(inArray(penjualanTable.id, headerIds))
     .orderBy(desc(penjualanTable.createdAt))
-    .limit(pageSize)
-    .offset(offset)
     .all();
 
-  const headerIds = (headers as PenjualanListHeader[]).map((h) => h.id);
-  if (headerIds.length === 0) {
-    return [] as PenjualanListHeader[];
-  }
+  const pagedHeaders = trimmedSearch
+    ? (headers as PenjualanListHeader[]).slice(offset, offset + pageSize)
+    : (headers as PenjualanListHeader[]);
+
+  const pagedHeaderIds = pagedHeaders.map((header) => header.id);
 
   const itemRows = await db
     .select({
@@ -242,7 +331,7 @@ async function loadPenjualanListRows(
       id_produksi: penjualanItemTabel.id_produksi,
     })
     .from(penjualanItemTabel)
-    .where(inArray(penjualanItemTabel.id_penjualan, headerIds))
+    .where(inArray(penjualanItemTabel.id_penjualan, pagedHeaderIds))
     .orderBy(asc(penjualanItemTabel.id))
     .all();
 
@@ -275,7 +364,7 @@ async function loadPenjualanListRows(
     itemsByPenjualan.set(item.id_penjualan, current);
   }
 
-  return (headers as PenjualanListHeader[]).map((header) => {
+  return pagedHeaders.map((header) => {
     const relatedItems = itemsByPenjualan.get(header.id) ?? [];
     const kodeProduksiList = relatedItems
       .map((item) => produksiMap.get(item.id_produksi))
@@ -297,15 +386,46 @@ export const penjualanApp = new Hono<{
 penjualanApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
-    const { page, pageSize, offset } = parsePagination(c.req.query());
+    const { search, page, pageSize, offset } = parsePagination(c.req.query());
 
-    const totalRow = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(penjualanTable)
-      .get();
-    const totalItems = Number(totalRow?.count ?? 0);
+    const trimmedSearch = search.trim();
+    let totalItems = 0;
+    const penjualanSearchCondition =
+      buildPenjualanSearchCondition(trimmedSearch);
+    const produksiSearchCondition = buildProduksiSearchCondition(trimmedSearch);
 
-    const data = await loadPenjualanListRows(db, pageSize, offset);
+    if (penjualanSearchCondition || produksiSearchCondition) {
+      const matchedHeaders = await db
+        .select({ id: penjualanTable.id })
+        .from(penjualanTable)
+        .where(penjualanSearchCondition)
+        .all();
+
+      const matchedItemPenjualan = await db
+        .select({ id_penjualan: penjualanItemTabel.id_penjualan })
+        .from(penjualanItemTabel)
+        .innerJoin(
+          produksiTable,
+          eq(produksiTable.id, penjualanItemTabel.id_produksi),
+        )
+        .where(produksiSearchCondition)
+        .all();
+
+      totalItems = new Set([
+        ...(matchedHeaders as Array<{ id: number }>).map((row) => row.id),
+        ...(matchedItemPenjualan as Array<{ id_penjualan: number }>).map(
+          (row) => row.id_penjualan,
+        ),
+      ]).size;
+    } else {
+      const totalRow = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(penjualanTable)
+        .get();
+      totalItems = Number(totalRow?.count ?? 0);
+    }
+
+    const data = await loadPenjualanListRows(db, pageSize, offset, search);
 
     return c.json({
       success: true,

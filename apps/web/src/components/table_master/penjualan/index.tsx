@@ -4,7 +4,7 @@ import { apiRequest } from "@/services/api.service";
 import { DataTable } from "@/components/table/DataTable";
 import { Penjualan as PenjualanType } from "@/types";
 import toast from "react-hot-toast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Printer, Download, Plus } from "lucide-react";
 import InputPenjualanForm from "./input";
 import ExportPenjualanModal from "./export";
@@ -15,6 +15,8 @@ export default function Penjualan() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [dataPenjualan, setDataPenjualan] = useState<PenjualanType[]>([]);
   const [expandedPenjualanId, setExpandedPenjualanId] = useState<number | null>(
     null,
@@ -26,6 +28,19 @@ export default function Penjualan() {
     number | null
   >(null);
 
+  const trimmedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
+  const penjualanEndpoint = trimmedSearchTerm
+    ? `/penjualan?search=${encodeURIComponent(trimmedSearchTerm)}`
+    : "/penjualan";
+
+  useEffect(() => {
+    const debounceId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(debounceId);
+  }, [searchTerm]);
+
   const {
     data: penjualanList,
     meta,
@@ -33,7 +48,7 @@ export default function Penjualan() {
     setPage,
     loading: loadingList,
     refresh,
-  } = usePaginatedApi<PenjualanType>("/penjualan");
+  } = usePaginatedApi<PenjualanType>(penjualanEndpoint, [trimmedSearchTerm]);
   const pageSize = meta?.pageSize ?? 10;
 
   const handleOpenExportModal = (data: PenjualanType[]) => {
@@ -67,7 +82,9 @@ export default function Penjualan() {
       setPenjualanDetails((current) => ({ ...current, [id]: detail }));
       return detail;
     } finally {
-      setLoadingPenjualanDetailId((current) => (current === id ? null : current));
+      setLoadingPenjualanDetailId((current) =>
+        current === id ? null : current,
+      );
     }
   };
 
@@ -179,7 +196,8 @@ export default function Penjualan() {
               border: "1.5px solid #E5E7EB",
               background: expandedPenjualanId === item.id ? "#EFF6FF" : "#fff",
               color: expandedPenjualanId === item.id ? "#2563EB" : "#374151",
-              borderColor: expandedPenjualanId === item.id ? "#BFDBFE" : "#E5E7EB",
+              borderColor:
+                expandedPenjualanId === item.id ? "#BFDBFE" : "#E5E7EB",
               fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
@@ -245,24 +263,27 @@ export default function Penjualan() {
         />
       </div>
 
-            <DataTable
-              data={penjualanList}
-              columns={columns}
-              loading={loadingList || loading}
-              title="Daftar Penjualan"
-              emptyMessage="Tidak ada data penjualan."
-              serverPagination={
-                meta
-                  ? {
-                      page,
-                      pageSize: meta.pageSize,
-                      totalItems: meta.totalItems,
-                      totalPages: meta.totalPages,
-                      onPageChange: setPage,
-                    }
-                  : undefined
+      <DataTable
+        data={penjualanList}
+        columns={columns}
+        loading={loadingList || loading}
+        title="Daftar Penjualan"
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        searchPlaceholder="Cari id, kode produksi, keterangan, kualitas, atau ukuran..."
+        emptyMessage="Tidak ada data penjualan."
+        serverPagination={
+          meta
+            ? {
+                page,
+                pageSize: meta.pageSize,
+                totalItems: meta.totalItems,
+                totalPages: meta.totalPages,
+                onPageChange: setPage,
               }
-            />
+            : undefined
+        }
+      />
 
       {/* ── Detail Modal — dirender di luar tabel agar fixed positioning bekerja ── */}
       {expandedPenjualanId !== null && (
@@ -293,70 +314,184 @@ export default function Penjualan() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div style={{
-              padding: "18px 20px 14px",
-              borderBottom: "1px solid #F3F4F6",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}>
+            <div
+              style={{
+                padding: "18px 20px 14px",
+                borderBottom: "1px solid #F3F4F6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>
+                <p
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "#111827",
+                    margin: 0,
+                  }}
+                >
                   Item Penjualan
                 </p>
                 <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
-                  {penjualanDetails[expandedPenjualanId]?.items?.length ?? 0} item
+                  {penjualanDetails[expandedPenjualanId]?.items?.length ?? 0}{" "}
+                  item
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setExpandedPenjualanId(null)}
                 style={{
-                  width: 28, height: 28, borderRadius: "50%",
-                  border: "none", background: "#F3F4F6",
-                  cursor: "pointer", fontSize: 13, color: "#6B7280",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "#F3F4F6",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  color: "#6B7280",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-              >✕</button>
+              >
+                ✕
+              </button>
             </div>
 
             {/* Body */}
             {loadingPenjualanDetailId === expandedPenjualanId ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "48px 20px", color: "#9CA3AF", fontSize: 14 }}>
-                <div style={{ width: 16, height: 16, border: "2px solid #2563EB", borderTopColor: "transparent", borderRadius: "50%", animation: "dt-spin .8s linear infinite" }} />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "48px 20px",
+                  color: "#9CA3AF",
+                  fontSize: 14,
+                }}
+              >
+                <div
+                  style={{
+                    width: 16,
+                    height: 16,
+                    border: "2px solid #2563EB",
+                    borderTopColor: "transparent",
+                    borderRadius: "50%",
+                    animation: "dt-spin .8s linear infinite",
+                  }}
+                />
                 Memuat item penjualan...
               </div>
             ) : (
-              <div style={{ padding: "14px 20px 20px", maxHeight: "60vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-                {(penjualanDetails[expandedPenjualanId]?.items ?? []).length > 0 ? (
-                  penjualanDetails[expandedPenjualanId]!.items!.map((detailItem) => (
-                    <div
-                      key={detailItem.id}
-                      style={{ border: "1px solid #F3F4F6", borderRadius: 12, padding: "12px 14px", background: "#FAFAFA" }}
-                    >
-                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontWeight: 600, fontSize: 14, color: "#111827", margin: 0 }}>
-                            {detailItem.komoditas?.nama ?? "-"}
-                          </p>
-                          <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
-                            {detailItem.produksi?.kode_produksi ?? "-"} · {detailItem.produksi?.ukuran ?? "-"} · {detailItem.produksi?.kualitas ?? "-"}
-                          </p>
+              <div
+                style={{
+                  padding: "14px 20px 20px",
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                {(penjualanDetails[expandedPenjualanId]?.items ?? []).length >
+                0 ? (
+                  penjualanDetails[expandedPenjualanId]!.items!.map(
+                    (detailItem) => (
+                      <div
+                        key={detailItem.id}
+                        style={{
+                          border: "1px solid #F3F4F6",
+                          borderRadius: 12,
+                          padding: "12px 14px",
+                          background: "#FAFAFA",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            gap: 12,
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <p
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 14,
+                                color: "#111827",
+                                margin: 0,
+                              }}
+                            >
+                              {detailItem.komoditas?.nama ?? "-"}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: 12,
+                                color: "#9CA3AF",
+                                marginTop: 2,
+                              }}
+                            >
+                              {detailItem.produksi?.kode_produksi ?? "-"} ·{" "}
+                              {detailItem.produksi?.ukuran ?? "-"} ·{" "}
+                              {detailItem.produksi?.kualitas ?? "-"}
+                            </p>
+                          </div>
+                          <span
+                            style={{
+                              background: "#EFF6FF",
+                              color: "#2563EB",
+                              borderRadius: 20,
+                              padding: "3px 10px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {detailItem.jumlah_terjual} pcs
+                          </span>
                         </div>
-                        <span style={{ background: "#EFF6FF", color: "#2563EB", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                          {detailItem.jumlah_terjual} pcs
-                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginTop: 8,
+                            fontSize: 12,
+                            color: "#6B7280",
+                          }}
+                        >
+                          <span>
+                            Rp
+                            {new Intl.NumberFormat("id-ID").format(
+                              detailItem.harga_satuan,
+                            )}
+                            ,-
+                          </span>
+                          <span style={{ fontWeight: 600, color: "#111827" }}>
+                            Subtotal Rp
+                            {new Intl.NumberFormat("id-ID").format(
+                              detailItem.sub_total,
+                            )}
+                            ,-
+                          </span>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: "#6B7280" }}>
-                        <span>Rp{new Intl.NumberFormat("id-ID").format(detailItem.harga_satuan)},-</span>
-                        <span style={{ fontWeight: 600, color: "#111827" }}>
-                          Subtotal Rp{new Intl.NumberFormat("id-ID").format(detailItem.sub_total)},-
-                        </span>
-                      </div>
-                    </div>
-                  ))
+                    ),
+                  )
                 ) : (
-                  <div style={{ border: "1.5px dashed #E5E7EB", borderRadius: 12, padding: "32px 16px", textAlign: "center", fontSize: 14, color: "#9CA3AF" }}>
+                  <div
+                    style={{
+                      border: "1.5px dashed #E5E7EB",
+                      borderRadius: 12,
+                      padding: "32px 16px",
+                      textAlign: "center",
+                      fontSize: 14,
+                      color: "#9CA3AF",
+                    }}
+                  >
                     Tidak ada detail item.
                   </div>
                 )}

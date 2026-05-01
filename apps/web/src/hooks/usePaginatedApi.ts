@@ -27,7 +27,7 @@ export function usePaginatedApi<T>(endpoint: string, deps: any[] = []) {
 
       fetchingRef.current.add(targetPage);
       if (!isPrefetch) setLoading(true);
-      
+
       try {
         const separator = endpoint.includes("?") ? "&" : "?";
         const response = (await apiRequest({
@@ -37,7 +37,7 @@ export function usePaginatedApi<T>(endpoint: string, deps: any[] = []) {
 
         const pageData = Array.isArray(response?.data) ? response.data : [];
         setPages((current) => ({ ...current, [targetPage]: pageData }));
-        
+
         // Always update meta to ensure we have totalPages info
         if (response?.meta) {
           setMeta(response.meta);
@@ -73,12 +73,12 @@ export function usePaginatedApi<T>(endpoint: string, deps: any[] = []) {
   useEffect(() => {
     const currentPages = pages;
     const currentMeta = meta;
-    
+
     // Fetch current page if not cached
     if (!currentPages[page] && !fetchingRef.current.has(page)) {
       fetchPage(page, false);
     }
-    
+
     // Prefetch next page if not cached and within bounds
     if (currentMeta && page < currentMeta.totalPages) {
       const nextPage = page + 1;
