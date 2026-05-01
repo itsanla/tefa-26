@@ -175,11 +175,8 @@ export default function DashboardBarang() {
   const TabButton = ({ type, isActive, onClick, children }: any) => (
     <button
       onClick={onClick}
-      className={`px-6 py-3 font-medium rounded-t-lg transition-colors ${
-        isActive
-          ? 'bg-blue-600 text-white border-b-2 border-blue-600'
-          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-      }`}
+      className={`tf-chip ${isActive ? "active" : ""}`}
+      type="button"
     >
       {children}
     </button>
@@ -228,12 +225,14 @@ export default function DashboardBarang() {
         <div className="flex gap-2">
           <button
             onClick={() => handleUpdate(item)}
-            className="p-2 bg-yellow-500 hover:bg-yellow-400 text-white rounded transition-colors">
+            className="tf-action tf-action-edit"
+            title="Edit">
             <Pencil size={16} />
           </button>
           <button
             onClick={() => handleDelete(item)}
-            className="p-2 bg-red-600 hover:bg-red-500 text-white rounded transition-colors">
+            className="tf-action tf-action-delete"
+            title="Hapus">
             <Trash2 size={16} />
           </button>
         </div>
@@ -282,53 +281,40 @@ export default function DashboardBarang() {
 
   return (
     <DashboardLayout title="Barang Masuk dan Keluar" role="">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-        {/* Tab Navigation */}
-        <div className="flex border-b">
-          <TabButton
-            type="masuk"
-            isActive={activeTab === "masuk"}
-            onClick={() => setActiveTab("masuk")}
-          >
-            Barang Masuk
-          </TabButton>
-          <TabButton
-            type="keluar"
-            isActive={activeTab === "keluar"}
-            onClick={() => setActiveTab("keluar")}
-          >
-            Barang Keluar
-          </TabButton>
-        </div>
-
-        {/* Tab Content */}
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              {activeTab === "masuk" ? "Data Barang Masuk" : "Data Barang Keluar"}
-            </h2>
-            <button
-              onClick={() => addTransaction(activeTab)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === "masuk"
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-red-600 hover:bg-red-700 text-white"
-              }`}
-            >
-              <Plus size={16} />
-              Tambah {activeTab === "masuk" ? "Barang Masuk" : "Barang Keluar"}
-            </button>
-          </div>
-
-          <DataTable
-            data={getCurrentData()}
-            columns={getCurrentColumns()}
-            pageSize={10}
-            emptyMessage={`Tidak ada data barang ${activeTab}`}
-            loading={loading}
-          />
-        </div>
+      <div className="tf-toolbar">
+        <TabButton
+          type="masuk"
+          isActive={activeTab === "masuk"}
+          onClick={() => setActiveTab("masuk")}
+        >
+          Barang Masuk
+        </TabButton>
+        <TabButton
+          type="keluar"
+          isActive={activeTab === "keluar"}
+          onClick={() => setActiveTab("keluar")}
+        >
+          Barang Keluar
+        </TabButton>
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={() => addTransaction(activeTab)}
+          className={activeTab === "masuk" ? "tf-btn-green" : "tf-btn-red"}
+          type="button"
+        >
+          <Plus size={16} />
+          Tambah {activeTab === "masuk" ? "Barang Masuk" : "Barang Keluar"}
+        </button>
       </div>
+
+      <DataTable
+        data={getCurrentData()}
+        columns={getCurrentColumns()}
+        pageSize={10}
+        title={activeTab === "masuk" ? "Data Barang Masuk" : "Data Barang Keluar"}
+        emptyMessage={`Tidak ada data barang ${activeTab}.`}
+        loading={loading}
+      />
 
       {/* Modal Form */}
       {openCreate && (

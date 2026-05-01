@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Penjualan — TEFA 26</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",sans-serif;background:#F5F7F5;-webkit-font-smoothing:antialiased;overflow:hidden}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(20px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes toastIn{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+@keyframes popIn{from{transform:scale(.88) translateY(8px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:10px}
+input:focus,select:focus{border-color:#16A34A!important;background:#fff!important;box-shadow:0 0 0 3px rgba(22,163,74,.12)!important;outline:none!important}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ── Data ─────────────────────────────────────────────────────────────────────
+const SAMPLE = [
+  {id:1,kode:"PJL-001",produk:"Batik Tulis Motif Parang",      kategori:"Batik",     jumlah:3, harga:285000,total:855000, tanggal:"2026-04-28",status:"Lunas",  pembeli:"Rina Susanti"},
+  {id:2,kode:"PJL-002",produk:"Kain Tenun Silungkang",         kategori:"Tenun",     jumlah:2, harga:420000,total:840000, tanggal:"2026-04-27",status:"Lunas",  pembeli:"Budi Hartono"},
+  {id:3,kode:"PJL-003",produk:"Tas Rajut Handmade",            kategori:"Kerajinan", jumlah:5, harga:125000,total:625000, tanggal:"2026-04-26",status:"Pending",pembeli:"Sari Dewi"},
+  {id:4,kode:"PJL-004",produk:"Batik Cap Mega Mendung",        kategori:"Batik",     jumlah:4, harga:180000,total:720000, tanggal:"2026-04-25",status:"Lunas",  pembeli:"Ahmad Fauzi"},
+  {id:5,kode:"PJL-005",produk:"Gelang Rotan Ukir",             kategori:"Kerajinan", jumlah:10,harga:45000, total:450000, tanggal:"2026-04-24",status:"Batal",  pembeli:"Nurul Aini"},
+  {id:6,kode:"PJL-006",produk:"Kain Songket Premium",          kategori:"Tenun",     jumlah:1, harga:850000,total:850000, tanggal:"2026-04-23",status:"Lunas",  pembeli:"Dewi Ratna"},
+  {id:7,kode:"PJL-007",produk:"Batik Tulis Motif Kawung",      kategori:"Batik",     jumlah:2, harga:310000,total:620000, tanggal:"2026-04-22",status:"Pending",pembeli:"Hendra Wijaya"},
+  {id:8,kode:"PJL-008",produk:"Dompet Kulit Anyam",            kategori:"Kerajinan", jumlah:6, harga:95000, total:570000, tanggal:"2026-04-21",status:"Lunas",  pembeli:"Maya Putri"},
+];
+
+const toIDR = n => new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",minimumFractionDigits:0}).format(n);
+const toDate = s => new Date(s).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"});
+
+const STATUS_MAP = {
+  Lunas:   {bg:"#F0FDF4",color:"#15803D",dot:"#22C55E"},
+  Pending: {bg:"#FEFCE8",color:"#92400E",dot:"#FACC15"},
+  Batal:   {bg:"#FEF2F2",color:"#991B1B",dot:"#EF4444"},
+};
+
+const EMPTY = {produk:"",kategori:"Batik",jumlah:1,harga:0,
+  tanggal:new Date().toISOString().split("T")[0],status:"Pending",pembeli:""};
+
+const inp = {
+  padding:"11px 14px",borderRadius:12,border:"1.5px solid #E5E7EB",
+  fontSize:15,color:"#111827",background:"#F9FAFB",outline:"none",
+  transition:"all .15s",fontFamily:"inherit",width:"100%",
+};
+
+// ── Sidebar ─────────────────────────────────────────────────────────────────
+const NAV = [
+  {icon:"⊞", label:"Dashboard"},
+  {icon:"📦", label:"Produk"},
+  {icon:"🛒", label:"Penjualan", active:true},
+  {icon:"🏭", label:"Produksi"},
+  {icon:"👥", label:"Pelanggan"},
+  {icon:"📊", label:"Laporan"},
+];
+
+const SIDEBAR_BG = "#1A4731";   // deep green
+const SIDEBAR_W  = 232;
+const SIDEBAR_WC = 68;          // collapsed width
+
+function Sidebar({ open, onToggle, onLogout }) {
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const logoutRef = useRef(null);
+
+  useEffect(() => {
+    function handler(e) {
+      if (logoutRef.current && !logoutRef.current.contains(e.target)) setLogoutOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const w = open ? SIDEBAR_W : SIDEBAR_WC;
+
+  return (
+    <div style={{
+      width: w, flexShrink:0,
+      background: SIDEBAR_BG,
+      display:"flex", flexDirection:"column",
+      height:"100vh", position:"relative",
+      transition:"width .28s cubic-bezier(.4,0,.2,1)",
+      overflow:"visible", zIndex:20,
+    }}>
+      {/* Logo */}
+      <div style={{
+        display:"flex", alignItems:"center",
+        gap:10, padding: open ? "24px 18px 20px" : "24px 0 20px",
+        justifyContent: open ? "flex-start" : "center",
+        borderBottom:"1px solid rgba(255,255,255,.08)",
+        overflow:"hidden", flexShrink:0,
+        transition:"padding .28s",
+      }}>
+        <div style={{
+          width:36, height:36, borderRadius:10, flexShrink:0,
+          background:"#FACC15",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontWeight:800, fontSize:17, color:SIDEBAR_BG,
+        }}>T</div>
+        {open && <div style={{overflow:"hidden", whiteSpace:"nowrap"}}>
+          <div style={{fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"-.2px"}}>TEFA 26</div>
+          <div style={{fontSize:11, color:"rgba(255,255,255,.45)", marginTop:1}}>SMK N 2 Batusangkar</div>
+        </div>}
+      </div>
+
+      {/* Nav */}
+      <nav style={{flex:1, padding:"14px 0", overflowY:"auto", overflowX:"hidden"}}>
+        {open && <div style={{
+          fontSize:10, fontWeight:700, color:"rgba(255,255,255,.3)",
+          textTransform:"uppercase", letterSpacing:".1em",
+          padding:"0 18px 8px",
+        }}>Menu</div>}
+
+        {NAV.map((item, i) => {
+          const isActive = item.active;
+          return (
+            <div key={i} style={{position:"relative", marginBottom:2}}>
+              {/* Top notch */}
+              {isActive && <div style={{
+                position:"absolute", top:-16, right:0,
+                width:16, height:16,
+                background:SIDEBAR_BG,
+                overflow:"hidden",
+                zIndex:1,
+              }}>
+                <div style={{
+                  position:"absolute", bottom:0, right:0,
+                  width:32, height:32,
+                  borderRadius:"50%",
+                  boxShadow:"8px 8px 0 8px #F5F7F5",
+                }}/>
+              </div>}
+
+              {/* Bottom notch */}
+              {isActive && <div style={{
+                position:"absolute", bottom:-16, right:0,
+                width:16, height:16,
+                background:SIDEBAR_BG,
+                overflow:"hidden",
+                zIndex:1,
+              }}>
+                <div style={{
+                  position:"absolute", top:0, right:0,
+                  width:32, height:32,
+                  borderRadius:"50%",
+                  boxShadow:"8px -8px 0 8px #F5F7F5",
+                }}/>
+              </div>}
+
+              <div style={{
+                display:"flex", alignItems:"center",
+                gap:10,
+                padding: open ? "11px 18px" : "11px 0",
+                justifyContent: open ? "flex-start" : "center",
+                cursor:"pointer",
+                marginRight: isActive ? 0 : 0,
+                borderRadius: isActive ? "12px 0 0 12px" : "10px",
+                marginLeft: isActive ? 8 : (open ? 8 : 6),
+                background: isActive ? "#F5F7F5" : "transparent",
+                color: isActive ? SIDEBAR_BG : "rgba(255,255,255,.65)",
+                fontWeight: isActive ? 700 : 500,
+                fontSize:14,
+                transition:"background .15s, color .15s",
+                position:"relative", zIndex:2,
+                whiteSpace:"nowrap", overflow:"hidden",
+              }}>
+                <span style={{fontSize:16, flexShrink:0}}>{item.icon}</span>
+                {open && <span>{item.label}</span>}
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Footer / User */}
+      <div style={{
+        borderTop:"1px solid rgba(255,255,255,.08)",
+        padding: open ? "14px 12px" : "14px 0",
+        display:"flex", justifyContent: open ? "flex-start" : "center",
+        position:"relative", flexShrink:0,
+      }} ref={logoutRef}>
+        <div onClick={() => setLogoutOpen(v => !v)} style={{
+          display:"flex", alignItems:"center", gap:10,
+          padding: open ? "8px 8px" : "8px 0",
+          borderRadius:10, cursor:"pointer",
+          transition:"background .15s",
+          width: open ? "100%" : "auto",
+        }} className="user-btn">
+          <div style={{
+            width:34, height:34, borderRadius:"50%", flexShrink:0,
+            background:"linear-gradient(135deg,#22C55E,#16A34A)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:13, fontWeight:700, color:"#fff",
+          }}>A</div>
+          {open && <div style={{flex:1, overflow:"hidden"}}>
+            <div style={{fontSize:13, fontWeight:600, color:"#fff", whiteSpace:"nowrap"}}>Admin</div>
+            <div style={{fontSize:11, color:"rgba(255,255,255,.45)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>admin@gmail.com</div>
+          </div>}
+          {open && <span style={{color:"rgba(255,255,255,.4)", fontSize:13}}>···</span>}
+        </div>
+
+        {/* Logout popup */}
+        {logoutOpen && (
+          <div style={{
+            position:"absolute", bottom: open ? 70 : 70,
+            left: open ? 12 : "50%",
+            transform: open ? "none" : "translateX(-50%)",
+            width:200,
+            background:"rgba(255,255,255,.18)",
+            backdropFilter:"blur(20px) saturate(180%)",
+            WebkitBackdropFilter:"blur(20px) saturate(180%)",
+            border:"1px solid rgba(255,255,255,.25)",
+            borderRadius:16,
+            padding:8,
+            boxShadow:"0 8px 32px rgba(0,0,0,.3)",
+            zIndex:100,
+            animation:"popIn .22s cubic-bezier(.34,1.56,.64,1)",
+          }}>
+            <div style={{
+              display:"flex", alignItems:"center", gap:10,
+              padding:"10px 12px",
+              borderRadius:10,
+              color:"#fff", fontSize:13, fontWeight:600,
+              cursor:"pointer",
+            }} className="logout-item">
+              <span>👤</span> Profil Saya
+            </div>
+            <div style={{height:1, background:"rgba(255,255,255,.15)", margin:"4px 8px"}}/>
+            <div onClick={onLogout} style={{
+              display:"flex", alignItems:"center", gap:10,
+              padding:"10px 12px",
+              borderRadius:10,
+              color:"#FCA5A5", fontSize:13, fontWeight:600,
+              cursor:"pointer",
+            }} className="logout-item">
+              <span>🚪</span> Keluar
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Toggle button */}
+      <div onClick={onToggle} style={{
+        position:"absolute", top:"50%", right:-14, transform:"translateY(-50%)",
+        width:28, height:28, borderRadius:"50%",
+        background:"#fff",
+        boxShadow:"0 2px 10px rgba(0,0,0,.2)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        cursor:"pointer", fontSize:13, color:SIDEBAR_BG,
+        zIndex:30, transition:"transform .2s",
+        userSelect:"none",
+        border:"1.5px solid #E5E7EB",
+      }}>
+        {open ? "‹" : "›"}
+      </div>
+    </div>
+  );
+}
+
+// ── Badge ────────────────────────────────────────────────────────────────────
+function Badge({status}){
+  const c = STATUS_MAP[status];
+  return <span style={{
+    background:c.bg, color:c.color, borderRadius:20,
+    padding:"4px 11px", fontSize:12, fontWeight:600,
+    display:"inline-flex", alignItems:"center", gap:5,
+  }}>
+    <span style={{width:6,height:6,borderRadius:"50%",background:c.dot,display:"inline-block"}}/>
+    {status}
+  </span>;
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function Toast({msg,type}){
+  return <div style={{
+    position:"fixed", bottom:28, right:28, zIndex:2000,
+    background: type==="success" ? "#15803D" : "#EF4444",
+    color:"#fff", padding:"12px 20px", borderRadius:14,
+    fontSize:14, fontWeight:600, boxShadow:"0 8px 32px rgba(0,0,0,.25)",
+    animation:"toastIn .3s cubic-bezier(.34,1.56,.64,1)",
+    display:"flex", alignItems:"center", gap:8,
+  }}>
+    {type==="success" ? "✓" : "✕"} {msg}
+  </div>;
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+function Modal({open,onClose,title,children}){
+  useEffect(()=>{document.body.style.overflow=open?"hidden":"";},[open]);
+  if(!open)return null;
+  return <div onClick={onClose} style={{
+    position:"fixed",inset:0,zIndex:1000,
+    display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+    background:"rgba(0,0,0,.3)",backdropFilter:"blur(10px)",
+    WebkitBackdropFilter:"blur(10px)",animation:"fadeIn .18s ease",
+  }}>
+    <div onClick={e=>e.stopPropagation()} style={{
+      background:"#fff",borderRadius:24,width:"100%",maxWidth:520,
+      boxShadow:"0 32px 80px rgba(0,0,0,.2)",
+      animation:"slideUp .28s cubic-bezier(.34,1.56,.64,1)",
+    }}>
+      <div style={{padding:"20px 24px 16px",borderBottom:"1px solid #F3F4F6",
+        display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span style={{fontSize:18,fontWeight:700,color:"#111827"}}>{title}</span>
+        <button onClick={onClose} style={{width:30,height:30,borderRadius:"50%",border:"none",
+          background:"#F3F4F6",cursor:"pointer",fontSize:14,color:"#6B7280",
+          display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}}>✕</button>
+      </div>
+      {children}
+    </div>
+  </div>;
+}
+
+function Field({label,children}){
+  return <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <label style={{fontSize:13,fontWeight:600,color:"#374151"}}>{label}</label>
+    {children}
+  </div>;
+}
+
+// ── Main App ─────────────────────────────────────────────────────────────────
+function App(){
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [data,setData]                = useState(SAMPLE);
+  const [search,setSearch]            = useState("");
+  const [filterStatus,setFilterStatus]= useState("Semua");
+  const [sortKey,setSortKey]          = useState("tanggal");
+  const [sortAsc,setSortAsc]          = useState(false);
+  const [modalOpen,setModalOpen]      = useState(false);
+  const [editItem,setEditItem]        = useState(null);
+  const [deleteTarget,setDeleteTarget]= useState(null);
+  const [form,setForm]                = useState(EMPTY);
+  const [toast,setToast]              = useState(null);
+
+  const totalLunas = data.filter(d=>d.status==="Lunas").reduce((s,d)=>s+d.total,0);
+
+  const filtered = data.filter(d => {
+    const q = search.toLowerCase();
+    return (d.produk.toLowerCase().includes(q)||d.pembeli.toLowerCase().includes(q)||d.kode.toLowerCase().includes(q))
+      && (filterStatus==="Semua"||d.status===filterStatus);
+  }).sort((a,b) => {
+    const av=a[sortKey],bv=b[sortKey];
+    if(typeof av==="number"&&typeof bv==="number") return sortAsc?av-bv:bv-av;
+    return sortAsc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
+  });
+
+  function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3000);}
+  function openCreate(){setEditItem(null);setForm(EMPTY);setModalOpen(true);}
+  function openEdit(item){
+    setEditItem(item);
+    setForm({produk:item.produk,kategori:item.kategori,jumlah:item.jumlah,
+      harga:item.harga,tanggal:item.tanggal,status:item.status,pembeli:item.pembeli});
+    setModalOpen(true);
+  }
+  function handleSort(k){if(sortKey===k)setSortAsc(p=>!p);else{setSortKey(k);setSortAsc(true);}}
+  function handleSave(e){
+    e.preventDefault();
+    if(!form.produk||!form.pembeli||form.harga<=0){showToast("Lengkapi semua field","error");return;}
+    const total=form.jumlah*form.harga;
+    if(editItem){
+      setData(prev=>prev.map(d=>d.id===editItem.id?{...d,...form,total}:d));
+      showToast("Data berhasil diperbarui");
+    } else {
+      const newId=Math.max(...data.map(d=>d.id))+1;
+      setData(prev=>[{id:newId,kode:"PJL-"+String(newId).padStart(3,"0"),...form,total},...prev]);
+      showToast("Penjualan berhasil ditambahkan");
+    }
+    setModalOpen(false);
+  }
+  function handleDelete(){
+    if(!deleteTarget)return;
+    setData(prev=>prev.filter(d=>d.id!==deleteTarget.id));
+    showToast("Data berhasil dihapus");
+    setDeleteTarget(null);
+  }
+  function handleExport(){
+    const rows = [["Kode","Produk","Kategori","Pembeli","Jumlah","Harga","Total","Tanggal","Status"]];
+    filtered.forEach(d => rows.push([d.kode,d.produk,d.kategori,d.pembeli,d.jumlah,d.harga,d.total,d.tanggal,d.status]));
+    const csv = rows.map(r=>r.join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+    a.download = "penjualan.csv";
+    a.click();
+    showToast("Berhasil diekspor ke CSV");
+  }
+
+  const SortIcon = ({k}) => <span style={{marginLeft:3,opacity:sortKey===k?1:.3,fontSize:10}}>
+    {sortKey===k?(sortAsc?"↑":"↓"):"↕"}
+  </span>;
+
+  return <>
+    <style>{`
+      .user-btn:hover{background:rgba(255,255,255,.08)!important}
+      .logout-item:hover{background:rgba(255,255,255,.15)!important}
+      .hrow:hover{background:#F9FBF9!important}
+      .sort-th{cursor:pointer;user-select:none;transition:color .15s}
+      .sort-th:hover{color:#16A34A}
+      .aBtn{width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;
+        display:inline-flex;align-items:center;justify-content:center;font-size:14px;
+        transition:transform .15s,background .15s}
+      .aBtn:hover{transform:scale(1.14)}
+      .aBtn:active{transform:scale(.91)}
+      .chip{padding:7px 16px;border-radius:20px;border:1.5px solid #E5E7EB;
+        background:#fff;font-size:13px;font-weight:600;cursor:pointer;
+        transition:all .18s;font-family:inherit;color:#374151}
+      .chip.active{background:#16A34A;color:#fff;border-color:#16A34A}
+      .chip:hover:not(.active){border-color:#16A34A;color:#16A34A}
+      .btn-green{background:#16A34A;color:#fff;border:none;border-radius:12px;
+        padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;
+        display:inline-flex;align-items:center;gap:7px;font-family:inherit;
+        transition:transform .15s,box-shadow .15s;
+        box-shadow:0 2px 10px rgba(22,163,74,.3)}
+      .btn-green:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(22,163,74,.4)}
+      .btn-green:active{transform:scale(.97)}
+      .btn-yellow{background:#FACC15;color:#1A4731;border:none;border-radius:12px;
+        padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;
+        display:inline-flex;align-items:center;gap:7px;font-family:inherit;
+        transition:transform .15s,box-shadow .15s;
+        box-shadow:0 2px 10px rgba(250,204,21,.3)}
+      .btn-yellow:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(250,204,21,.4)}
+      .btn-yellow:active{transform:scale(.97)}
+    `}</style>
+
+    <div style={{display:"flex",height:"100vh",overflow:"hidden"}}>
+      <Sidebar open={sidebarOpen} onToggle={()=>setSidebarOpen(v=>!v)} onLogout={()=>showToast("Berhasil keluar")}/>
+
+      {/* Main */}
+      <div style={{
+        flex:1, overflowY:"auto", background:"#F5F7F5",
+        borderRadius: sidebarOpen ? "24px 0 0 24px" : "0",
+        transition:"border-radius .28s",
+      }}>
+        <div style={{padding:"32px 36px", maxWidth:1200, margin:"0 auto"}}>
+
+          {/* Header */}
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",
+            marginBottom:28,animation:"fadeIn .4s ease"}}>
+            <div>
+              <h1 style={{fontSize:28,fontWeight:700,color:"#111827",letterSpacing:"-.5px"}}>Penjualan</h1>
+              <p style={{fontSize:14,color:"#6B7280",marginTop:3}}>Kelola data transaksi penjualan produk TEFA</p>
+            </div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <button className="btn-yellow" onClick={handleExport}>
+                <span>↓</span> Export Penjualan
+              </button>
+              <button className="btn-green" onClick={openCreate}>
+                <span style={{fontSize:16}}>+</span> Buat Penjualan
+              </button>
+            </div>
+          </div>
+
+          {/* Toolbar */}
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,
+            flexWrap:"wrap",animation:"slideUp .35s .05s ease both"}}>
+            <div style={{position:"relative",flex:1,minWidth:220}}>
+              <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",
+                fontSize:14,color:"#9CA3AF",pointerEvents:"none"}}>🔍</span>
+              <input value={search} onChange={e=>setSearch(e.target.value)}
+                placeholder="Cari produk, pembeli, kode..."
+                style={{...inp,paddingLeft:36,borderRadius:12}}/>
+            </div>
+            {["Semua","Lunas","Pending","Batal"].map(s=><button key={s}
+              className={"chip"+(filterStatus===s?" active":"")}
+              onClick={()=>setFilterStatus(s)}>{s}</button>)}
+          </div>
+
+          {/* Table card */}
+          <div style={{
+            background:"#fff",borderRadius:20,
+            boxShadow:"0 1px 3px rgba(0,0,0,.06),0 4px 20px rgba(0,0,0,.05)",
+            border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",
+            animation:"slideUp .35s .1s ease both",
+          }}>
+            <div style={{padding:"16px 20px",borderBottom:"1px solid #F3F4F6",
+              display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:"#111827"}}>Daftar Penjualan</div>
+                <div style={{fontSize:12,color:"#9CA3AF",marginTop:1}}>{filtered.length} dari {data.length} transaksi · Total lunas {toIDR(totalLunas)}</div>
+              </div>
+            </div>
+
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead>
+                  <tr style={{background:"#F9FAFB"}}>
+                    {[
+                      {k:"kode",l:"Kode"},{k:"produk",l:"Produk"},{k:"pembeli",l:"Pembeli"},
+                      {k:"jumlah",l:"Qty"},{k:"harga",l:"Harga Satuan"},
+                      {k:"total",l:"Total"},{k:"tanggal",l:"Tanggal"},{k:"status",l:"Status"}
+                    ].map(col=><th key={col.k} className="sort-th" onClick={()=>handleSort(col.k)}
+                      style={{padding:"11px 16px",textAlign:"left",fontSize:11,fontWeight:600,
+                        color:sortKey===col.k?"#16A34A":"#9CA3AF",textTransform:"uppercase",
+                        letterSpacing:".06em",borderBottom:"1px solid #F3F4F6",whiteSpace:"nowrap"}}>
+                      {col.l}<SortIcon k={col.k}/>
+                    </th>)}
+                    <th style={{padding:"11px 16px",textAlign:"left",fontSize:11,fontWeight:600,
+                      color:"#9CA3AF",textTransform:"uppercase",letterSpacing:".06em",
+                      borderBottom:"1px solid #F3F4F6"}}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length===0 && <tr><td colSpan={9} style={{textAlign:"center",
+                    padding:"56px",color:"#D1D5DB",fontSize:14}}>
+                    <div style={{fontSize:36,marginBottom:12}}>🔍</div>
+                    Tidak ada data ditemukan
+                  </td></tr>}
+                  {filtered.map((row,i)=><tr key={row.id} className="hrow"
+                    style={{borderBottom:"1px solid #F9FAFB",
+                      animation:"rowIn .3s "+(i*.04)+"s ease both"}}>
+                    <td style={{padding:"13px 16px",fontSize:12,fontFamily:"monospace",color:"#9CA3AF",fontWeight:500}}>{row.kode}</td>
+                    <td style={{padding:"13px 16px"}}>
+                      <div style={{fontWeight:600,fontSize:14,color:"#111827"}}>{row.produk}</div>
+                      <div style={{fontSize:12,color:"#9CA3AF",marginTop:2}}>{row.kategori}</div>
+                    </td>
+                    <td style={{padding:"13px 16px",fontSize:14,color:"#374151"}}>{row.pembeli}</td>
+                    <td style={{padding:"13px 16px",fontSize:14,color:"#374151",textAlign:"center",fontWeight:600}}>{row.jumlah}</td>
+                    <td style={{padding:"13px 16px",fontSize:13,color:"#374151",fontVariantNumeric:"tabular-nums"}}>{toIDR(row.harga)}</td>
+                    <td style={{padding:"13px 16px",fontSize:14,fontWeight:700,color:"#111827",fontVariantNumeric:"tabular-nums"}}>{toIDR(row.total)}</td>
+                    <td style={{padding:"13px 16px",fontSize:13,color:"#9CA3AF",whiteSpace:"nowrap"}}>{toDate(row.tanggal)}</td>
+                    <td style={{padding:"13px 16px"}}><Badge status={row.status}/></td>
+                    <td style={{padding:"13px 16px"}}>
+                      <div style={{display:"flex",gap:6}}>
+                        <button className="aBtn" title="Edit"
+                          style={{background:"#F0FDF4",color:"#16A34A"}}
+                          onClick={()=>openEdit(row)}>✏️</button>
+                        <button className="aBtn" title="Hapus"
+                          style={{background:"#FEF2F2",color:"#EF4444"}}
+                          onClick={()=>setDeleteTarget(row)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>)}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{padding:"13px 20px",borderTop:"1px solid #F3F4F6",
+              display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span style={{fontSize:13,color:"#9CA3AF"}}>{filtered.length} entri ditampilkan</span>
+              <span style={{fontSize:13,color:"#9CA3AF"}}>
+                <span style={{color:"#16A34A",fontWeight:600}}>{data.filter(d=>d.status==="Lunas").length}</span> lunas ·{" "}
+                <span style={{color:"#CA8A04",fontWeight:600}}>{data.filter(d=>d.status==="Pending").length}</span> pending ·{" "}
+                <span style={{color:"#EF4444",fontWeight:600}}>{data.filter(d=>d.status==="Batal").length}</span> batal
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* FORM MODAL */}
+    <Modal open={modalOpen} onClose={()=>setModalOpen(false)} title={editItem?"Edit Penjualan":"Buat Penjualan"}>
+      <form onSubmit={handleSave} style={{padding:"20px 24px 24px",display:"flex",flexDirection:"column",gap:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          <Field label="Nama Produk">
+            <input value={form.produk} onChange={e=>setForm(f=>({...f,produk:e.target.value}))}
+              placeholder="cth. Batik Tulis Parang" required style={inp}/>
+          </Field>
+          <Field label="Kategori">
+            <select value={form.kategori} onChange={e=>setForm(f=>({...f,kategori:e.target.value}))} style={inp}>
+              {["Batik","Tenun","Kerajinan","Lainnya"].map(k=><option key={k}>{k}</option>)}
+            </select>
+          </Field>
+          <Field label="Pembeli">
+            <input value={form.pembeli} onChange={e=>setForm(f=>({...f,pembeli:e.target.value}))}
+              placeholder="Nama pembeli" required style={inp}/>
+          </Field>
+          <Field label="Tanggal">
+            <input type="date" value={form.tanggal}
+              onChange={e=>setForm(f=>({...f,tanggal:e.target.value}))} required style={inp}/>
+          </Field>
+          <Field label="Jumlah">
+            <input type="number" min={1} value={form.jumlah}
+              onChange={e=>setForm(f=>({...f,jumlah:Number(e.target.value)}))} required style={inp}/>
+          </Field>
+          <Field label="Harga Satuan (Rp)">
+            <input type="number" min={0} value={form.harga||""}
+              onChange={e=>setForm(f=>({...f,harga:Number(e.target.value)}))}
+              placeholder="0" required style={inp}/>
+          </Field>
+          <Field label="Status">
+            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} style={inp}>
+              {["Lunas","Pending","Batal"].map(s=><option key={s}>{s}</option>)}
+            </select>
+          </Field>
+          <Field label="Total (otomatis)">
+            <div style={{...inp,background:"#F3F4F6",color:"#9CA3AF",userSelect:"none"}}>
+              {toIDR(form.jumlah*(form.harga||0))}
+            </div>
+          </Field>
+        </div>
+        <div style={{display:"flex",gap:10,marginTop:4}}>
+          <button type="button" onClick={()=>setModalOpen(false)} style={{flex:1,padding:"12px",
+            borderRadius:12,border:"1.5px solid #E5E7EB",background:"#fff",
+            fontSize:15,fontWeight:600,color:"#111827",cursor:"pointer",fontFamily:"inherit"}}>Batal</button>
+          <button type="submit" style={{flex:1,padding:"12px",borderRadius:12,border:"none",
+            background:"#16A34A",fontSize:15,fontWeight:600,color:"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+            {editItem?"Simpan Perubahan":"Buat Penjualan"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+
+    {/* DELETE MODAL */}
+    <Modal open={!!deleteTarget} onClose={()=>setDeleteTarget(null)} title="Konfirmasi Hapus">
+      <div style={{padding:"20px 24px 28px",textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:12}}>🗑️</div>
+        <p style={{fontSize:14,color:"#374151",lineHeight:1.7}}>
+          Hapus data <b style={{color:"#111827"}}>{deleteTarget?.produk}</b>?<br/>
+          Tindakan ini tidak dapat dibatalkan.
+        </p>
+        <div style={{display:"flex",gap:10,marginTop:22}}>
+          <button onClick={()=>setDeleteTarget(null)} style={{flex:1,padding:"12px",borderRadius:12,
+            border:"1.5px solid #E5E7EB",background:"#fff",fontSize:15,
+            fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Batal</button>
+          <button onClick={handleDelete} style={{flex:1,padding:"12px",borderRadius:12,
+            border:"none",background:"#EF4444",fontSize:15,fontWeight:600,
+            color:"#fff",cursor:"pointer",fontFamily:"inherit"}}>Hapus</button>
+        </div>
+      </div>
+    </Modal>
+
+    {toast && <Toast msg={toast.msg} type={toast.type}/>}
+  </>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

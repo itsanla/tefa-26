@@ -95,7 +95,7 @@ export default function Produksi() {
             cell: (item: ProduksiType) => (
                 <div className="flex gap-2">
                     <button
-                        className="p-2 bg-yellow-500 hover:bg-yellow-400 text-white rounded"
+                        className="tf-action tf-action-edit"
                         onClick={() =>
                             handleOpenUpdateModal(item)
                         }
@@ -104,7 +104,7 @@ export default function Produksi() {
                     </button>
                     <button
                         onClick={() => handleDeleteClick(item.id)}
-                        className="p-2 bg-red-600 hover:bg-red-500 text-white rounded"
+                        className="tf-action tf-action-delete"
                     >
                         <Trash2 size={16} />
                     </button>
@@ -115,11 +115,12 @@ export default function Produksi() {
 
     return (
         <>
-            <div className="flex justify-end items-center w-full mb-4">
+            <div className="tf-toolbar" style={{ justifyContent: "flex-end" }}>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                    Tambah Produksi
+                    className="tf-btn-green"
+                    type="button">
+                    + Tambah Produksi
                 </button>
                 <InputProduksiForm
                     isOpen={isModalOpen}
@@ -136,6 +137,7 @@ export default function Produksi() {
                 data={produksiList}
                 columns={columns}
                 loading={loading}
+                title="Daftar Produksi"
                 emptyMessage="Tidak ada data produksi."
             />
             <InputProduksiForm

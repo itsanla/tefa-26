@@ -8,7 +8,6 @@ import { createColumns } from "@/components/table_master/user";
 import CreateUpdateModal from "@/components/dashboard/CreateUpdateModal";
 import ConfirmButton from "@/components/common/ConfirmButton";
 import toast from "react-hot-toast";
-import { Button } from "@/components/landing/ui/button";
 import { PlusCircle } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table"; // Import ColumnDef
 
@@ -128,25 +127,19 @@ export default function UserPage() {
 
   return (
     <DashboardLayout title="Manajemen User" role="Admin">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Daftar User
-          </h1>
-          <Button onClick={handleCreateClick}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Tambah User
-          </Button>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <DataTable
-            data={users}
-            columns={columns}
-            loading={loading}
-            emptyMessage="Tidak ada data user."
-          />
-        </div>
+      <div className="tf-toolbar" style={{ justifyContent: "flex-end" }}>
+        <button onClick={handleCreateClick} className="tf-btn-green" type="button">
+          <PlusCircle size={16} /> Tambah User
+        </button>
       </div>
+
+      <DataTable
+        data={users}
+        columns={columns}
+        loading={loading}
+        title="Daftar User"
+        emptyMessage="Tidak ada data user."
+      />
 
       {showModal && (
         <CreateUpdateModal

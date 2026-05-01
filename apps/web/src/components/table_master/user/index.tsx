@@ -30,12 +30,12 @@ export const createColumns = ({ onEdit, onDelete }: UserTableActionsProps): Colu
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(user)}
-            className="p-2 bg-yellow-500 hover:bg-yellow-400 text-white rounded transition-colors">
+            className="tf-action tf-action-edit">
             <Pencil size={16} />
           </button>
           <button
             onClick={() => onDelete(user.id)}
-            className="p-2 bg-red-600 hover:bg-red-500 text-white rounded transition-colors">
+            className="tf-action tf-action-delete">
             <Trash2 size={16} />
           </button>
         </div>

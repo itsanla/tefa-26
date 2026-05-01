@@ -5,7 +5,7 @@ import { DataTable } from "@/components/table/DataTable";
 import { Penjualan as PenjualanType } from "@/types";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Printer, Download, Plus } from "lucide-react";
 import InputPenjualanForm from "./input";
 import ExportPenjualanModal from "./export";
 import { printStruk } from "@/components/struk/StrukPembelian";
@@ -174,11 +174,11 @@ export default function Penjualan() {
       cell: (item: PenjualanType) => (
         <div className="relative flex items-center gap-2 justify-end">
           <button
-            className="inline-flex items-center gap-1 rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            className="tf-action tf-action-info"
             onClick={() => togglePenjualanDropdown(item.id)}
             type="button"
+            title="Detail"
           >
-            Detail
             {expandedPenjualanId === item.id ? (
               <ChevronUp size={16} />
             ) : (
@@ -187,11 +187,12 @@ export default function Penjualan() {
           </button>
 
           <button
-            className="bg-blue-600 px-4 py-2 rounded text-white text-sm"
+            className="tf-action tf-action-print"
             onClick={() => handlePrintClick(item.id)}
             type="button"
+            title="Print struk"
           >
-            Print
+            <Printer size={16} />
           </button>
 
           {expandedPenjualanId === item.id && (
@@ -279,12 +280,13 @@ export default function Penjualan() {
 
   return (
     <>
-      <div className="flex justify-end items-center w-full mb-4">
+      <div className="tf-toolbar" style={{ justifyContent: "flex-end" }}>
         <button
           onClick={() => handleOpenExportModal(penjualanList)}
-          className="ml-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded"
+          className="tf-btn-yellow"
+          type="button"
         >
-          Export Penjualan
+          <Download size={16} /> Export Penjualan
         </button>
 
         <ExportPenjualanModal
@@ -295,9 +297,10 @@ export default function Penjualan() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="ml-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded"
+          className="tf-btn-green"
+          type="button"
         >
-          Buat Penjualan
+          <Plus size={16} /> Buat Penjualan
         </button>
         <InputPenjualanForm
           isOpen={isModalOpen}
@@ -314,6 +317,7 @@ export default function Penjualan() {
         data={penjualanList}
         columns={columns}
         loading={loading}
+        title="Daftar Penjualan"
         emptyMessage="Tidak ada data penjualan."
       />
     </>

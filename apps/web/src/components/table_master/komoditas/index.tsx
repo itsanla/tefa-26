@@ -87,21 +87,24 @@ export default function Komoditas() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => handleOpenUpdateModal(item)}
-                        className="p-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded"
+                        className="tf-action tf-action-edit"
+                        title="Edit"
                     >
                         <PenBox size={16} />
                     </button>
                     <button
-                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                        className="tf-action tf-action-info"
                         onClick={() => {
                             setSelectedKomoditas(item);
                             setIsInfoOpen(true);
-                        }}>
+                        }}
+                        title="Detail">
                         <InfoIcon size={16} />
                     </button>
                     <button
                         onClick={() => handleDeleteClick(item.id)}
-                        className="p-2 bg-red-600 hover:bg-red-500 text-white rounded"
+                        className="tf-action tf-action-delete"
+                        title="Hapus"
                     >
                         <Trash2 size={16} />
                     </button>
@@ -112,11 +115,12 @@ export default function Komoditas() {
 
     return (
         <>
-            <div className="flex justify-end items-center w-full mb-4">
+            <div className="tf-toolbar" style={{ justifyContent: "flex-end" }}>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="ml-4 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded">
-                    Buat Komoditas Baru
+                    className="tf-btn-green"
+                    type="button">
+                    + Buat Komoditas Baru
                 </button>
                 <InputKomoditasForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmitSuccess={fetchDataKomoditas} />
             </div>
@@ -124,6 +128,7 @@ export default function Komoditas() {
                 data={komoditasList}
                 columns={columns}
                 loading={loading}
+                title="Daftar Komoditas"
                 emptyMessage="Tidak ada data komoditas."
             />
             <InfoKomoditasForm

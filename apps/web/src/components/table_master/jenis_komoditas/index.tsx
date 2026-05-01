@@ -77,13 +77,13 @@ export default function Jenis_Komoditas({ onEdit, reloadTrigger }: Props) {
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(item)}
-            className="p-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded"
+            className="tf-action tf-action-edit"
           >
             <PenBox size={16} />
           </button>
           <button
             onClick={() => handleDeleteClick(item.id)}
-            className="p-2 bg-red-600 hover:bg-red-500 text-white rounded"
+            className="tf-action tf-action-delete"
           >
             <Trash2 size={16} />
           </button>
@@ -98,6 +98,7 @@ export default function Jenis_Komoditas({ onEdit, reloadTrigger }: Props) {
         data={jenisList}
         columns={columns}
         loading={loading}
+        title="Daftar Jenis Komoditas"
         emptyMessage="Tidak ada data jenis komoditas."
       />
       {showConfirm && (

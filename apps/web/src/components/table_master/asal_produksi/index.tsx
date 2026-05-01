@@ -75,13 +75,13 @@ export default function AsalProduksi({ onEditAsal, reloadTrigger }: Props) {
                 <div className="flex gap-2">
                     <button
                         onClick={() => onEditAsal(item)}
-                        className="p-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded"
+                        className="tf-action tf-action-edit"
                     >
                         <PenBox size={16} />
                     </button>
                     <button
                         onClick={() => handleDeleteClick(item.id)}
-                        className="p-2 bg-red-600 hover:bg-red-500 text-white rounded"
+                        className="tf-action tf-action-delete"
                     >
                         <Trash2 size={16} />
                     </button>
@@ -96,6 +96,7 @@ export default function AsalProduksi({ onEditAsal, reloadTrigger }: Props) {
                 data={asalProduksiList}
                 columns={columns}
                 loading={loading}
+                title="Daftar Asal Produksi"
                 emptyMessage="Tidak ada data asal produksi."
             />
             {showConfirm && (

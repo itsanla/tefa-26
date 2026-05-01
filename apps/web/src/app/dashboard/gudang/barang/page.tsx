@@ -88,13 +88,15 @@ export default function DashboardBarang() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleUpdate(item.id)}
-                    className="p-2 bg-yellow-600 text-white rounded"
+                    className="tf-action tf-action-edit"
+                    title="Edit"
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="p-2 bg-red-600 text-white rounded"
+                    className="tf-action tf-action-delete"
+                    title="Hapus"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -104,7 +106,8 @@ export default function DashboardBarang() {
             },
           ]}
           pageSize={10}
-          emptyMessage="No items found."
+          title="Daftar Barang"
+          emptyMessage="Tidak ada data barang."
         />
       </div>
 
