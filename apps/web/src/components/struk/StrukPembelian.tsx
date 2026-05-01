@@ -204,7 +204,18 @@ export function printStruk(data: StrukData): void {
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
-  const w = window.open(url, "_blank", "width=280,height=600,resizable=yes,scrollbars=no");
+  
+  // Calculate center position
+  const width = 800;
+  const height = 700;
+  const left = (window.screen.width - width) / 2;
+  const top = (window.screen.height - height) / 2;
+  
+  const w = window.open(
+    url,
+    "_blank",
+    `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+  );
 
   if (!w) {
     URL.revokeObjectURL(url);
