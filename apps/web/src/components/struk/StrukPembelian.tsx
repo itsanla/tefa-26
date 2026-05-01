@@ -38,17 +38,9 @@ type LegacyStrukItem = {
 
 export interface StrukData {
   items?: LegacyStrukItem[];
-  namaKomoditas?: string;
-  satuanKomoditas?: string;
-  kodeProduksi?: string;
-  ukuran?: string;
-  kualitas?: string;
-  asalProduksi?: string;
-  hargaPersatuan?: number;
-  jumlahTerjual?: number;
-  totalHarga: number;
+  total_harga: number;
   keterangan: string;
-  tanggal: Date | string;
+  created_at: Date | string;
 }
 
 function formatRupiah(amount: number): string {
@@ -100,17 +92,7 @@ export function printStruk(data: StrukData): void {
   const hasMultiItems = items.length > 1;
   const firstItem = items[0] ?? null;
 
-  const singleItem = firstItem ?? {
-    namaKomoditas: data.namaKomoditas ?? "-",
-    satuanKomoditas: data.satuanKomoditas ?? "-",
-    kodeProduksi: data.kodeProduksi ?? "-",
-    ukuran: data.ukuran ?? "-",
-    kualitas: data.kualitas ?? "-",
-    asalProduksi: data.asalProduksi ?? "-",
-    hargaPersatuan: data.hargaPersatuan ?? 0,
-    jumlahTerjual: data.jumlahTerjual ?? 0,
-    totalHarga: data.totalHarga ?? 0,
-  };
+  const singleItem = firstItem;
 
   const renderItem = (item: StrukItemData, index: number) => `
   <div class="item-block">
@@ -182,11 +164,10 @@ export function printStruk(data: StrukData): void {
   <div class="center bold" style="font-size:13px;">SMK NEGERI 2 BATUSANGKAR</div>
   <div class="center" style="font-size:10px;">Teaching Factory (TEFA)</div>
   <div class="divider"></div>
-  <div class="center" style="font-size:10px;">${formatTanggal(data.tanggal)}</div>
+  <div class="center" style="font-size:10px;">${formatTanggal(data.created_at)}</div>
   <div class="divider"></div>
 
-  ${
-    hasMultiItems
+  ${hasMultiItems
       ? `
       <div class="bold" style="margin-bottom:4px;font-size:10px;">Detail Item</div>
       ${items.map((item, index) => renderItem(item, index)).join('<div class="divider"></div>')}
@@ -203,18 +184,18 @@ export function printStruk(data: StrukData): void {
       <div class="row"><span class="label">Harga/Satuan</span><span class="value">${formatRupiah(singleItem.hargaPersatuan)}</span></div>
       <div class="row"><span class="label">Jumlah</span><span class="value">${singleItem.jumlahTerjual} ${esc(singleItem.satuanKomoditas)}</span></div>
     `
-  }
+    }
 
   <div class="divider"></div>
 
   <div class="total-row">
     <span>TOTAL</span>
-    <span>${formatRupiah(data.totalHarga)}</span>
+    <span>${formatRupiah(data.total_harga)}</span>
   </div>
 
   <div class="divider"></div>
 
-  ${data.keterangan ? `<div style="font-size:10px;margin:4px 0;">Ket: ${esc(data.keterangan)}</div><div class="divider"></div>` : ""}
+  ${data.keterangan ? `<div style="font-size:10px;margin:4px 0;">Keterangan :<br>${esc(data.keterangan)}</div><div class="divider"></div>` : ""}
 
   <div class="footer">Terima kasih atas pembelian Anda!</div>
   <div class="footer">-- SMKN 2 Batusangkar --</div>

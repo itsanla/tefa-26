@@ -111,12 +111,12 @@ export default function InputPenjualanForm({
       const updateItems =
         Array.isArray(initialData.items) && initialData.items.length > 0
           ? initialData.items.map((item: any) => ({
-              id_komodity: Number(item.id_komodity) || 0,
-              id_produksi: Number(item.id_produksi) || 0,
-              jumlah_terjual: Number(item.jumlah_terjual) || 0,
-              total_harga: Number(item.sub_total ?? 0),
-              keterangan: "",
-            }))
+            id_komodity: Number(item.id_komodity) || 0,
+            id_produksi: Number(item.id_produksi) || 0,
+            jumlah_terjual: Number(item.jumlah_terjual) || 0,
+            total_harga: Number(item.sub_total ?? 0),
+            keterangan: "",
+          }))
           : [createEmptyItem()];
 
       setFormItems(updateItems);
@@ -348,7 +348,7 @@ export default function InputPenjualanForm({
         if (printableItems.length > 0) {
           printStruk({
             items: printableItems,
-            totalHarga: payload.items.reduce(
+            total_harga: payload.items.reduce(
               (sum, item) => sum + item.total_harga,
               0,
             ),
@@ -358,7 +358,7 @@ export default function InputPenjualanForm({
                 .map((item) => item.keterangan.trim())
                 .filter(Boolean)
                 .join(" | "),
-            tanggal: new Date(),
+            created_at: new Date(),
           });
         }
       }
@@ -494,20 +494,6 @@ export default function InputPenjualanForm({
                       ,-
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-3">
-                  <label className="mb-1 block text-sm">
-                    Keterangan Item (opsional)
-                  </label>
-                  <input
-                    type="text"
-                    value={item.keterangan}
-                    onChange={(e) =>
-                      handleItemChange(index, "keterangan", e.target.value)
-                    }
-                    className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
                 </div>
               </div>
             );

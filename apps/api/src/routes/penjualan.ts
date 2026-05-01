@@ -111,7 +111,6 @@ async function loadPenjualanDetail(
   const items = await db
     .select({
       id: penjualanItemTabel.id,
-      id_penjualan: penjualanItemTabel.id_penjualan,
       id_komodity: penjualanItemTabel.id_komodity,
       id_produksi: penjualanItemTabel.id_produksi,
       jumlah_terjual: penjualanItemTabel.jumlah_terjual,
@@ -182,34 +181,14 @@ async function loadPenjualanDetail(
     }),
   );
 
-  const summaryData = summary as any;
-  const firstItem = itemsWithDetails[0] as any;
 
   return convertTimestamps({
-    ...summary,
+    id: summary.id,
+    total_harga: summary.total_harga,
+    keterangan: summary.keterangan,
     items: itemsWithDetails,
-    namaKomoditas:
-      firstItem?.komoditas?.nama ?? summaryData?.komoditas?.nama ?? "",
-    satuanKomoditas:
-      firstItem?.komoditas?.satuan ?? summaryData?.komoditas?.satuan ?? "",
-    kodeProduksi:
-      firstItem?.produksi?.kode_produksi ??
-      summaryData?.produksi?.kode_produksi ??
-      "",
-    ukuran: firstItem?.produksi?.ukuran ?? summaryData?.produksi?.ukuran ?? "",
-    kualitas:
-      firstItem?.produksi?.kualitas ?? summaryData?.produksi?.kualitas ?? "",
-    asalProduksi:
-      firstItem?.produksi?.asal_produksi?.nama ??
-      summaryData?.produksi?.asal_produksi?.nama ??
-      "-",
-    hargaPersatuan:
-      firstItem?.harga_satuan ?? summaryData?.produksi?.harga_persatuan ?? 0,
-    jumlahTerjual:
-      firstItem?.jumlah_terjual ?? summaryData?.jumlah_terjual ?? 0,
-    totalHarga: summaryData?.total_harga,
-    keterangan: summaryData?.keterangan,
-    tanggal: summaryData?.createdAt,
+    created_at: summary.createdAt,
+    updated_at: summary.updatedAt,
   });
 }
 
