@@ -46,6 +46,7 @@ export interface Produksi {
   jumlah: number;
   kode_produksi: string;
   harga_persatuan: number;
+  harga_per_buah: number;
   ukuran: string;
   kualitas: string;
   createdAt: string;
@@ -61,6 +62,7 @@ export interface PenjualanItem {
   id_produksi: number;
   jumlah_terjual: number;
   berat: number;
+  satuan_jual: string;
   harga_satuan: number;
   sub_total: number;
   createdAt: string;

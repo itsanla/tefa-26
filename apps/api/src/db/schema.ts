@@ -75,6 +75,7 @@ export const produksiTable = sqliteTable("Produksi", {
   kualitas: text("kualitas").notNull(),
   jumlah: integer("jumlah").notNull().default(0),
   harga_persatuan: integer("harga_persatuan").notNull().default(0),
+  harga_per_buah: integer("harga_per_buah").notNull().default(0),
   createdAt: integer("createdAt")
     .notNull()
     .default(sql`(unixepoch())`),
@@ -110,6 +111,7 @@ export const penjualanItemTabel = sqliteTable("PenjualanItem", {
     .references(() => produksiTable.id),
   jumlah_terjual: integer("jumlah_terjual").notNull().default(0),
   berat: real("berat").notNull().default(0),
+  satuan_jual: text("satuan_jual").notNull().default("kilogram"),
   harga_satuan: integer("harga_satuan").notNull().default(0),
   sub_total: integer("sub_total").notNull().default(0),
   createdAt: integer("createdAt")

@@ -75,6 +75,7 @@ async function loadPenjualanSummary(
       ukuran: produksiTable.ukuran,
       kualitas: produksiTable.kualitas,
       harga_persatuan: produksiTable.harga_persatuan,
+      harga_per_buah: produksiTable.harga_per_buah,
     })
     .from(produksiTable)
     .where(eq(produksiTable.id, firstItem.id_produksi))
@@ -116,6 +117,7 @@ async function loadPenjualanDetail(
       id_produksi: penjualanItemTabel.id_produksi,
       jumlah_terjual: penjualanItemTabel.jumlah_terjual,
       berat: penjualanItemTabel.berat,
+      satuan_jual: penjualanItemTabel.satuan_jual,
       harga_satuan: penjualanItemTabel.harga_satuan,
       sub_total: penjualanItemTabel.sub_total,
     })
@@ -157,6 +159,7 @@ async function loadPenjualanDetail(
           ukuran: produksiTable.ukuran,
           kualitas: produksiTable.kualitas,
           harga_persatuan: produksiTable.harga_persatuan,
+          harga_per_buah: produksiTable.harga_per_buah,
         })
         .from(produksiTable)
         .where(eq(produksiTable.id, pi.id_produksi))
@@ -491,6 +494,7 @@ penjualanApp.post("/", async (c) => {
         id_produksi?: number | string;
         jumlah_terjual?: number | string;
         berat?: number | string;
+        satuan_jual?: string;
       }>;
     }>();
 
@@ -541,16 +545,19 @@ penjualanApp.post("/", async (c) => {
         `items.${index}.jumlah_terjual`,
         "Jumlah buah harus berupa angka bulat lebih dari 0.",
       );
-      v.required(
-        item.berat,
-        `items.${index}.berat`,
-        "Berat harus diisi.",
-      );
-      v.check(
-        !isNaN(Number(item.berat)) && Number(item.berat) > 0,
-        `items.${index}.berat`,
-        "Berat harus berupa angka lebih dari 0.",
-      );
+      const satuan = item.satuan_jual === "buah" ? "buah" : "kilogram";
+      if (satuan === "kilogram") {
+        v.required(
+          item.berat,
+          `items.${index}.berat`,
+          "Berat harus diisi.",
+        );
+        v.check(
+          !isNaN(Number(item.berat)) && Number(item.berat) > 0,
+          `items.${index}.berat`,
+          "Berat harus berupa angka lebih dari 0.",
+        );
+      }
     });
 
     if (v.hasErrors()) {
@@ -568,6 +575,7 @@ penjualanApp.post("/", async (c) => {
       id_produksi: number;
       jumlah_terjual: number;
       berat: number;
+      satuan_jual: string;
       harga_satuan: number;
       sub_total: number;
       keterangan: string;
@@ -579,7 +587,8 @@ penjualanApp.post("/", async (c) => {
       const id_komodity = Number(item.id_komodity);
       const id_produksi = Number(item.id_produksi);
       const jumlah_terjual = Number(item.jumlah_terjual);
-      const berat = Number(item.berat);
+      const satuan_jual = item.satuan_jual === "buah" ? "buah" : "kilogram";
+      const berat = satuan_jual === "kilogram" ? Number(item.berat) : 0;
       const keterangan = item.keterangan ?? "";
 
       const komoditas = await db
@@ -602,15 +611,19 @@ penjualanApp.post("/", async (c) => {
         throw new AppError("Stok produksi tidak mencukupi", 400);
       }
 
-      const harga_satuan = produksi.harga_persatuan;
-      // sub_total dihitung berdasarkan berat, bukan jumlah buah
-      const sub_total = Math.round(harga_satuan * berat);
+      const harga_satuan = satuan_jual === "kilogram"
+        ? produksi.harga_persatuan
+        : produksi.harga_per_buah;
+      const sub_total = satuan_jual === "kilogram"
+        ? Math.round(harga_satuan * berat)
+        : Math.round(harga_satuan * jumlah_terjual);
 
       resolvedItems.push({
         id_komodity,
         id_produksi,
         jumlah_terjual,
         berat,
+        satuan_jual,
         harga_satuan,
         sub_total,
         keterangan,
@@ -702,6 +715,7 @@ penjualanApp.post("/", async (c) => {
             id_produksi: item.id_produksi,
             jumlah_terjual: item.jumlah_terjual,
             berat: item.berat,
+            satuan_jual: item.satuan_jual,
             harga_satuan: item.harga_satuan,
             sub_total: item.sub_total,
             createdAt: now,
@@ -749,6 +763,7 @@ penjualanApp.post("/", async (c) => {
             id_produksi: item.id_produksi,
             jumlah_terjual: item.jumlah_terjual,
             berat: item.berat,
+            satuan_jual: item.satuan_jual,
             harga_satuan: item.harga_satuan,
             sub_total: item.sub_total,
             keterangan: item.keterangan,
@@ -975,6 +990,7 @@ penjualanApp.put("/:id", async (c) => {
         id_produksi?: number | string;
         jumlah_terjual?: number | string;
         berat?: number | string;
+        satuan_jual?: string;
       }>;
     }>();
 
@@ -999,12 +1015,15 @@ penjualanApp.put("/:id", async (c) => {
       v.isIntGt(item.id_produksi, 0, `items.${index}.id_produksi`, "ID Produksi harus berupa angka.");
       v.required(item.jumlah_terjual, `items.${index}.jumlah_terjual`, "Jumlah buah harus diisi.");
       v.isIntGt(item.jumlah_terjual, 0, `items.${index}.jumlah_terjual`, "Jumlah buah harus berupa angka bulat lebih dari 0.");
-      v.required(item.berat, `items.${index}.berat`, "Berat harus diisi.");
-      v.check(
-        !isNaN(Number(item.berat)) && Number(item.berat) > 0,
-        `items.${index}.berat`,
-        "Berat harus berupa angka lebih dari 0.",
-      );
+      const satuan = item.satuan_jual === "buah" ? "buah" : "kilogram";
+      if (satuan === "kilogram") {
+        v.required(item.berat, `items.${index}.berat`, "Berat harus diisi.");
+        v.check(
+          !isNaN(Number(item.berat)) && Number(item.berat) > 0,
+          `items.${index}.berat`,
+          "Berat harus berupa angka lebih dari 0.",
+        );
+      }
     });
 
     if (v.hasErrors()) {
@@ -1049,6 +1068,7 @@ penjualanApp.put("/:id", async (c) => {
       id_produksi: number;
       jumlah_terjual: number;
       berat: number;
+      satuan_jual: string;
       harga_satuan: number;
       sub_total: number;
       keterangan: string;
@@ -1058,7 +1078,8 @@ penjualanApp.put("/:id", async (c) => {
       const id_komodity = Number(item.id_komodity);
       const id_produksi = Number(item.id_produksi);
       const jumlah_terjual = Number(item.jumlah_terjual);
-      const berat = Number(item.berat);
+      const satuan_jual = item.satuan_jual === "buah" ? "buah" : "kilogram";
+      const berat = satuan_jual === "kilogram" ? Number(item.berat) : 0;
       const keterangan = item.keterangan ?? "";
 
       const komoditas = await db
@@ -1083,10 +1104,14 @@ penjualanApp.put("/:id", async (c) => {
         throw new AppError("Stok produksi tidak mencukupi", 400);
       }
 
-      const harga_satuan = produksi.harga_persatuan;
-      const sub_total = Math.round(harga_satuan * berat);
+      const harga_satuan = satuan_jual === "kilogram"
+        ? produksi.harga_persatuan
+        : produksi.harga_per_buah;
+      const sub_total = satuan_jual === "kilogram"
+        ? Math.round(harga_satuan * berat)
+        : Math.round(harga_satuan * jumlah_terjual);
 
-      resolvedItems.push({ id_komodity, id_produksi, jumlah_terjual, berat, harga_satuan, sub_total, keterangan });
+      resolvedItems.push({ id_komodity, id_produksi, jumlah_terjual, berat, satuan_jual, harga_satuan, sub_total, keterangan });
     }
 
     // Perform update with rollback tracking
@@ -1136,6 +1161,7 @@ penjualanApp.put("/:id", async (c) => {
             id_produksi: item.id_produksi,
             jumlah_terjual: item.jumlah_terjual,
             berat: item.berat,
+            satuan_jual: item.satuan_jual,
             harga_satuan: item.harga_satuan,
             sub_total: item.sub_total,
             createdAt: now,
@@ -1230,6 +1256,7 @@ penjualanApp.put("/:id", async (c) => {
             id_produksi: old.id_produksi,
             jumlah_terjual: old.jumlah_terjual,
             berat: old.berat,
+            satuan_jual: old.satuan_jual,
             harga_satuan: old.harga_satuan,
             sub_total: old.sub_total,
             createdAt: old.createdAt,

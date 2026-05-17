@@ -28,6 +28,7 @@ type PenjualanFormItem = {
   id_produksi: number;
   jumlah_terjual: number;
   berat: number;
+  satuan_jual: "kilogram" | "buah";
   total_harga: number;
   keterangan: string;
 };
@@ -37,6 +38,7 @@ const createEmptyItem = (): PenjualanFormItem => ({
   id_produksi: 0,
   jumlah_terjual: 0,
   berat: 0,
+  satuan_jual: "kilogram",
   total_harga: 0,
   keterangan: "",
 });
@@ -172,7 +174,7 @@ export default function KasirPage() {
         errors[`${index}.jumlah_terjual`] = "Jumlah buah harus lebih dari 0";
       }
 
-      if (!item.berat || item.berat <= 0) {
+      if (item.satuan_jual === "kilogram" && (!item.berat || item.berat <= 0)) {
         errors[`${index}.berat`] = "Berat harus lebih dari 0";
       }
 
@@ -259,7 +261,12 @@ export default function KasirPage() {
         "berat",
       ];
 
-      if (numberFields.includes(field)) {
+      if (field === "satuan_jual") {
+        current.satuan_jual = rawValue as "kilogram" | "buah";
+        if (rawValue === "buah") {
+          current.berat = 0;
+        }
+      } else if (numberFields.includes(field)) {
         const numValue = Number(rawValue);
         current[field] = (Number.isNaN(numValue) ? 0 : numValue) as never;
       } else {
@@ -281,9 +288,14 @@ export default function KasirPage() {
       const selectedProduksi = produksi.find(
         (p) => p.id === current.id_produksi,
       );
-      if (selectedProduksi && current.berat > 0) {
-        current.total_harga =
-          selectedProduksi.harga_persatuan * current.berat;
+      if (selectedProduksi) {
+        if (current.satuan_jual === "buah" && current.jumlah_terjual > 0) {
+          current.total_harga = selectedProduksi.harga_per_buah * current.jumlah_terjual;
+        } else if (current.satuan_jual === "kilogram" && current.berat > 0) {
+          current.total_harga = selectedProduksi.harga_persatuan * current.berat;
+        } else {
+          current.total_harga = 0;
+        }
       } else {
         current.total_harga = 0;
       }
@@ -351,6 +363,7 @@ export default function KasirPage() {
           id_produksi: item.id_produksi,
           jumlah_terjual: item.jumlah_terjual,
           berat: item.berat,
+          satuan_jual: item.satuan_jual,
           total_harga: item.total_harga,
           keterangan: item.keterangan,
         })),
@@ -380,9 +393,10 @@ export default function KasirPage() {
               ukuran: selectedProd.ukuran,
               kualitas: selectedProd.kualitas,
               asalProduksi: selectedProd.asal_produksi?.nama ?? "-",
-              hargaPersatuan: selectedProd.harga_persatuan,
+              hargaPersatuan: item.satuan_jual === "buah" ? selectedProd.harga_per_buah : selectedProd.harga_persatuan,
               jumlahTerjual: item.jumlah_terjual,
               berat: item.berat,
+              satuan_jual: item.satuan_jual,
               totalHarga: item.total_harga,
             };
           })
@@ -625,7 +639,7 @@ export default function KasirPage() {
                               {new Intl.NumberFormat("id-ID").format(
                                 detailItem.harga_satuan,
                               )}
-                              ,-/kg
+                              {detailItem.satuan_jual === "buah" ? ",-/buah" : ",-/kg"}
                             </span>
                             <span>
                               Subtotal Rp
@@ -838,6 +852,22 @@ export default function KasirPage() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Satuan Jual
+                      </label>
+                      <select
+                        value={item.satuan_jual}
+                        onChange={(e) =>
+                          handleItemChange(index, "satuan_jual", e.target.value)
+                        }
+                        className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                      >
+                        <option value="kilogram">Per Kilogram (kg)</option>
+                        <option value="buah">Per Buah</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Jumlah Buah *
                       </label>
                       <Input
@@ -872,34 +902,38 @@ export default function KasirPage() {
                         </div>
                       )}
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Berat (kg) *
-                      </label>
-                      <Input
-                        type="number"
-                        value={item.berat || ""}
-                        onChange={(e) =>
-                          handleItemChange(index, "berat", e.target.value)
-                        }
-                        placeholder="0.0000"
-                        min="0.0001"
-                        step="0.0001"
-                        className={`w-full p-3 border-2 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
-                          formErrors[`${index}.berat`]
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                      />
-                      {formErrors[`${index}.berat`] && (
-                        <div className="flex items-center gap-1 mt-2 text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg">
-                          <AlertCircle size={14} />
-                          <span>{formErrors[`${index}.berat`]}</span>
-                        </div>
-                      )}
-                    </div>
                   </div>
+
+                  {item.satuan_jual === "kilogram" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Berat (kg) *
+                        </label>
+                        <Input
+                          type="number"
+                          value={item.berat || ""}
+                          onChange={(e) =>
+                            handleItemChange(index, "berat", e.target.value)
+                          }
+                          placeholder="0.0000"
+                          min="0.0001"
+                          step="0.0001"
+                          className={`w-full p-3 border-2 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
+                            formErrors[`${index}.berat`]
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                        />
+                        {formErrors[`${index}.berat`] && (
+                          <div className="flex items-center gap-1 mt-2 text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg">
+                            <AlertCircle size={14} />
+                            <span>{formErrors[`${index}.berat`]}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
@@ -934,13 +968,17 @@ export default function KasirPage() {
                           disabled
                         />
                       </div>
-                      {item.berat > 0 && item.id_produksi > 0 && (
+                      {item.id_produksi > 0 && (
                         <p className="mt-1 text-xs text-gray-500">
-                          {item.berat} kg × Rp
-                          {new Intl.NumberFormat("id-ID").format(
-                            produksi.find((p) => p.id === item.id_produksi)?.harga_persatuan ?? 0,
-                          )}
-                          /kg
+                          {item.satuan_jual === "kilogram" && item.berat > 0 ? (
+                            <>{item.berat} kg × Rp{new Intl.NumberFormat("id-ID").format(
+                              produksi.find((p) => p.id === item.id_produksi)?.harga_persatuan ?? 0,
+                            )}/kg</>
+                          ) : item.satuan_jual === "buah" && item.jumlah_terjual > 0 ? (
+                            <>{item.jumlah_terjual} buah × Rp{new Intl.NumberFormat("id-ID").format(
+                              produksi.find((p) => p.id === item.id_produksi)?.harga_per_buah ?? 0,
+                            )}/buah</>
+                          ) : null}
                         </p>
                       )}
                     </div>

@@ -12,6 +12,7 @@ type PenjualanFormItem = {
   id_produksi: number;
   jumlah_terjual: number;
   berat: number;
+  satuan_jual: "kilogram" | "buah";
   total_harga: number;
   keterangan: string;
 };
@@ -21,6 +22,7 @@ const createEmptyItem = (): PenjualanFormItem => ({
   id_produksi: 0,
   jumlah_terjual: 0,
   berat: 0,
+  satuan_jual: "kilogram",
   total_harga: 0,
   keterangan: "",
 });
@@ -123,6 +125,7 @@ export default function InputPenjualanForm({
             id_produksi: Number(item.id_produksi) || 0,
             jumlah_terjual: Number(item.jumlah_terjual) || 0,
             berat: Number(item.berat) || 0,
+            satuan_jual: (item.satuan_jual === "buah" ? "buah" : "kilogram") as "kilogram" | "buah",
             total_harga: Number(item.sub_total ?? 0),
             keterangan: "",
           }))
@@ -214,7 +217,12 @@ export default function InputPenjualanForm({
         "berat",
       ];
 
-      if (numberFields.includes(field)) {
+      if (field === "satuan_jual") {
+        current.satuan_jual = rawValue as "kilogram" | "buah";
+        if (rawValue === "buah") {
+          current.berat = 0;
+        }
+      } else if (numberFields.includes(field)) {
         const numValue = Number(rawValue);
         current[field] = (Number.isNaN(numValue) ? 0 : numValue) as never;
       } else {
@@ -238,10 +246,14 @@ export default function InputPenjualanForm({
       const selectedProduksi = produksiList.find(
         (p) => Number(p.id) === current.id_produksi,
       );
-      // harga ditentukan oleh berat, bukan jumlah buah
-      if (selectedProduksi && current.berat > 0) {
-        current.total_harga =
-          Number(selectedProduksi.harga_persatuan) * current.berat;
+      if (selectedProduksi) {
+        if (current.satuan_jual === "buah" && current.jumlah_terjual > 0) {
+          current.total_harga = Number(selectedProduksi.harga_per_buah) * current.jumlah_terjual;
+        } else if (current.satuan_jual === "kilogram" && current.berat > 0) {
+          current.total_harga = Number(selectedProduksi.harga_persatuan) * current.berat;
+        } else {
+          current.total_harga = 0;
+        }
       } else {
         current.total_harga = 0;
       }
@@ -289,7 +301,7 @@ export default function InputPenjualanForm({
       if (!item.jumlah_terjual || item.jumlah_terjual <= 0) {
         errors[`${index}.jumlah_terjual`] = "Jumlah buah harus lebih dari 0";
       }
-      if (!item.berat || item.berat <= 0) {
+      if (item.satuan_jual === "kilogram" && (!item.berat || item.berat <= 0)) {
         errors[`${index}.berat`] = "Berat harus lebih dari 0";
       }
 
@@ -341,6 +353,7 @@ export default function InputPenjualanForm({
         id_produksi: item.id_produksi,
         jumlah_terjual: item.jumlah_terjual,
         berat: item.berat,
+        satuan_jual: item.satuan_jual,
         total_harga: item.total_harga,
         keterangan: item.keterangan,
       })),
@@ -376,9 +389,10 @@ export default function InputPenjualanForm({
               ukuran: selectedProd.ukuran,
               kualitas: selectedProd.kualitas,
               asalProduksi: selectedProd.asal_produksi?.nama ?? "-",
-              hargaPersatuan: selectedProd.harga_persatuan,
+              hargaPersatuan: item.satuan_jual === "buah" ? selectedProd.harga_per_buah : selectedProd.harga_persatuan,
               jumlahTerjual: item.jumlah_terjual,
               berat: item.berat,
+              satuan_jual: item.satuan_jual,
               totalHarga: item.total_harga,
             };
           })
@@ -501,6 +515,20 @@ export default function InputPenjualanForm({
                   </div>
 
                   <div>
+                    <label className="mb-1 block text-sm">Satuan Jual</label>
+                    <select
+                      value={item.satuan_jual}
+                      onChange={(e) =>
+                        handleItemChange(index, "satuan_jual", e.target.value)
+                      }
+                      className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="kilogram">Per Kilogram (kg)</option>
+                      <option value="buah">Per Buah</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="mb-1 block text-sm">Jumlah Buah</label>
                     <input
                       type="number"
@@ -525,26 +553,28 @@ export default function InputPenjualanForm({
                     ) : null}
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-sm">Berat (kg)</label>
-                    <input
-                      type="number"
-                      min={0.0001}
-                      step={0.0001}
-                      value={item.berat || ""}
-                      onChange={(e) =>
-                        handleItemChange(index, "berat", e.target.value)
-                      }
-                      className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="0.0000 kg"
-                      required
-                    />
-                    {formErrors[`${index}.berat`] ? (
-                      <p className="mt-1 text-xs text-red-600">
-                        {formErrors[`${index}.berat`]}
-                      </p>
-                    ) : null}
-                  </div>
+                  {item.satuan_jual === "kilogram" && (
+                    <div>
+                      <label className="mb-1 block text-sm">Berat (kg)</label>
+                      <input
+                        type="number"
+                        min={0.0001}
+                        step={0.0001}
+                        value={item.berat || ""}
+                        onChange={(e) =>
+                          handleItemChange(index, "berat", e.target.value)
+                        }
+                        className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        placeholder="0.0000 kg"
+                        required
+                      />
+                      {formErrors[`${index}.berat`] ? (
+                        <p className="mt-1 text-xs text-red-600">
+                          {formErrors[`${index}.berat`]}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
 
                   <div className="md:col-span-2">
                     <label className="mb-1 block text-sm">Subtotal</label>
@@ -552,13 +582,17 @@ export default function InputPenjualanForm({
                       Rp {new Intl.NumberFormat("id-ID").format(
                         item.total_harga || 0,
                       )}
-                      {item.berat > 0 && item.id_produksi ? (
+                      {item.id_produksi ? (
                         <span className="ml-2 text-gray-500">
-                          ({item.berat} kg × Rp {new Intl.NumberFormat("id-ID").format(
-                            produksiList.find(
-                              (p) => Number(p.id) === item.id_produksi,
-                            )?.harga_persatuan ?? 0,
-                          )}/kg)
+                          {item.satuan_jual === "kilogram" && item.berat > 0 ? (
+                            <>({item.berat} kg × Rp {new Intl.NumberFormat("id-ID").format(
+                              produksiList.find((p) => Number(p.id) === item.id_produksi)?.harga_persatuan ?? 0,
+                            )}/kg)</>
+                          ) : item.satuan_jual === "buah" && item.jumlah_terjual > 0 ? (
+                            <>({item.jumlah_terjual} buah × Rp {new Intl.NumberFormat("id-ID").format(
+                              produksiList.find((p) => Number(p.id) === item.id_produksi)?.harga_per_buah ?? 0,
+                            )}/buah)</>
+                          ) : null}
                         </span>
                       ) : null}
                     </div>

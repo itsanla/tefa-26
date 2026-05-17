@@ -8,6 +8,7 @@ export interface StrukItemData {
   hargaPersatuan: number;
   jumlahTerjual: number;
   berat: number;
+  satuan_jual?: string;
   totalHarga: number;
 }
 
@@ -21,6 +22,7 @@ type LegacyStrukItem = {
   hargaPersatuan?: number;
   jumlahTerjual?: number;
   berat?: number;
+  satuan_jual?: string;
   totalHarga?: number;
   harga_satuan?: number;
   sub_total?: number;
@@ -86,6 +88,7 @@ function normalizeItem(item: LegacyStrukItem): StrukItemData {
     hargaPersatuan: item.hargaPersatuan ?? item.harga_satuan ?? 0,
     jumlahTerjual: item.jumlahTerjual ?? item.jumlah_terjual ?? 0,
     berat: item.berat ?? 0,
+    satuan_jual: item.satuan_jual ?? "kilogram",
     totalHarga: item.totalHarga ?? item.sub_total ?? 0,
   };
 }
@@ -106,9 +109,9 @@ export function printStruk(data: StrukData): void {
     <div class="row"><span class="label">Kode Prod.</span><span class="value">${esc(item.kodeProduksi)}</span></div>
     <div class="row"><span class="label">Ukuran</span><span class="value">${esc(item.ukuran)}</span></div>
     <div class="row"><span class="label">Kualitas</span><span class="value">${esc(item.kualitas)}</span></div>
-    <div class="row"><span class="label">Harga/kg</span><span class="value">${formatRupiah(item.hargaPersatuan)}</span></div>
+    <div class="row"><span class="label">${item.satuan_jual === "buah" ? "Harga/buah" : "Harga/kg"}</span><span class="value">${formatRupiah(item.hargaPersatuan)}</span></div>
     <div class="row"><span class="label">Jumlah Buah</span><span class="value">${item.jumlahTerjual} buah</span></div>
-    <div class="row"><span class="label">Berat</span><span class="value">${item.berat} kg</span></div>
+    ${item.satuan_jual !== "buah" ? `<div class="row"><span class="label">Berat</span><span class="value">${item.berat} kg</span></div>` : ""}
     <div class="row"><span class="label">Subtotal</span><span class="value">${formatRupiah(item.totalHarga)}</span></div>
   </div>`;
 
@@ -186,9 +189,9 @@ export function printStruk(data: StrukData): void {
 
       <div class="divider"></div>
 
-      <div class="row"><span class="label">Harga/kg</span><span class="value">${formatRupiah(singleItem.hargaPersatuan)}</span></div>
+      <div class="row"><span class="label">${singleItem.satuan_jual === "buah" ? "Harga/buah" : "Harga/kg"}</span><span class="value">${formatRupiah(singleItem.hargaPersatuan)}</span></div>
       <div class="row"><span class="label">Jumlah Buah</span><span class="value">${singleItem.jumlahTerjual} buah</span></div>
-      <div class="row"><span class="label">Berat</span><span class="value">${singleItem.berat} kg</span></div>
+      ${singleItem.satuan_jual !== "buah" ? `<div class="row"><span class="label">Berat</span><span class="value">${singleItem.berat} kg</span></div>` : ""}
     `
     }
 

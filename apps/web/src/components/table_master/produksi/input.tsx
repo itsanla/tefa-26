@@ -76,10 +76,10 @@ export default function InputProduksiForm({
     const [kualitas, setKualitas] = useState("");
     const [jumlah_diproduksi, setJumlahDiproduksi] = useState("");
     const [harga_persatuan, setHargaPersatuan] = useState("");
+    const [harga_per_buah, setHargaPerBuah] = useState("");
     const [isCustomKualitas, setIsCustomKualitas] = useState(false);
     const [keterangan, setKeterangan] = useState("");
     const [loading, setLoading] = useState(false);
-    const [satuan, setSatuan] = useState("Kg");
 
     const [asalList, setAsalList] = useState<any[]>([]);
     const [komoditasList, setKomoditasList] = useState<any[]>([]);
@@ -96,6 +96,7 @@ export default function InputProduksiForm({
             setKualitas(initialData.kualitas || "");
             setJumlahDiproduksi(initialData.jumlah?.toString() || "");
             setHargaPersatuan(initialData.harga_persatuan?.toString() || "");
+            setHargaPerBuah(initialData.harga_per_buah?.toString() || "");
             setIsCustomKualitas(initialData.kualitas && !["Medium", "Premium"].includes(initialData.kualitas));
             setKeterangan("");
         }
@@ -136,6 +137,7 @@ export default function InputProduksiForm({
             kualitas,
             jumlah_diproduksi: parseInt(jumlah_diproduksi),
             harga_persatuan: parseFloat(harga_persatuan),
+            harga_per_buah: parseFloat(harga_per_buah) || 0,
         };
         if (formMode === "update") {
             payload.keterangan = keterangan;
@@ -207,15 +209,7 @@ export default function InputProduksiForm({
                         onChange={(e) => {
                             const selectedKomoditasId = e.target.value;
                             setIdKomoditas(selectedKomoditasId);
-                            const selectedKomoditas = komoditasList.find(
-                                (komoditas) => komoditas.id.toString() === selectedKomoditasId
-                            );
-                            if (selectedKomoditas) {
-                                setSatuan(selectedKomoditas.satuan);
-                            } else {
-                                setSatuan("Kg"); // Default to Kg if no komoditas is selected
-                            }
-                        }}
+                            }}
                         className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
                         required
                     >
@@ -269,11 +263,21 @@ export default function InputProduksiForm({
 
                     <label>Harga per kg</label>
                     <input
-                        type="number" // Changed to number type
+                        type="number"
                         value={harga_persatuan}
                         onChange={(e) => setHargaPersatuan(e.target.value)}
                         className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="0" // Allow 0 as input
+                        min="0"
+                    />
+
+                    <label>Harga per buah</label>
+                    <input
+                        type="number"
+                        value={harga_per_buah}
+                        onChange={(e) => setHargaPerBuah(e.target.value)}
+                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        min="0"
+                        placeholder="0 (jika tidak dijual per buah)"
                     />
 
                     {formMode === "update" && (

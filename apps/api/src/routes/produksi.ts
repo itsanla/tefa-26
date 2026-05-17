@@ -153,6 +153,7 @@ produksiApp.post("/", async (c) => {
       kualitas?: string;
       jumlah_diproduksi?: number | string;
       harga_persatuan?: number | string;
+      harga_per_buah?: number | string;
     }>();
 
     const v = new Validator();
@@ -181,6 +182,7 @@ produksiApp.post("/", async (c) => {
     const id_komoditas = Number(body.id_komoditas);
     const jumlah_diproduksi = Number(body.jumlah_diproduksi);
     const harga_persatuan = Number(body.harga_persatuan);
+    const harga_per_buah = Number(body.harga_per_buah ?? 0);
 
     if (!Number.isFinite(jumlah_diproduksi) || jumlah_diproduksi <= 0) {
       throw new AppError("Jumlah diproduksi harus berupa angka > 0", 400);
@@ -216,6 +218,7 @@ produksiApp.post("/", async (c) => {
         kualitas: body.kualitas!,
         jumlah: jumlah_diproduksi,
         harga_persatuan,
+        harga_per_buah,
       })
       .returning();
 
@@ -252,6 +255,7 @@ produksiApp.put("/:id", async (c) => {
       kualitas?: string;
       jumlah_diproduksi?: number | string;
       harga_persatuan?: number | string;
+      harga_per_buah?: number | string;
       keterangan?: string;
     }>();
 
@@ -278,6 +282,7 @@ produksiApp.put("/:id", async (c) => {
 
     const jumlah = Number(body.jumlah_diproduksi);
     const harga_persatuan = Number(body.harga_persatuan);
+    const harga_per_buah = Number(body.harga_per_buah ?? 0);
     const selisih = jumlah - produksi.jumlah;
 
     if (produksi.id_komoditas) {
@@ -308,6 +313,7 @@ produksiApp.put("/:id", async (c) => {
         kualitas: body.kualitas!,
         jumlah,
         harga_persatuan,
+        harga_per_buah,
         updatedAt: Math.floor(Date.now() / 1000),
       })
       .where(eq(produksiTable.id, id))
