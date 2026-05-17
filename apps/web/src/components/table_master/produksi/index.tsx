@@ -5,7 +5,7 @@ import { Produksi as ProduksiType, StokHistoriProduksi } from "@/types";
 import ConfirmButton from "@/components/common/ConfirmButton";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import { PenBox, Trash2 } from "lucide-react";
+import { PenBox, Trash2, X } from "lucide-react";
 import { apiRequest } from "@/services/api.service";
 import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
@@ -15,6 +15,7 @@ export default function Produksi() {
     const [produksiYgDipilih, setProduksiYgDipilih] = useState<ProduksiType | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [detailItem, setDetailItem] = useState<ProduksiType | null>(null);
     const {
         data: produksiList,
         meta,
@@ -77,7 +78,17 @@ export default function Produksi() {
         { header: "Kode Produksi", accessorKey: "kode_produksi" as keyof ProduksiType },
         { header: "Asal Produksi", accessorKey: "asal_produksi" as keyof ProduksiType, cell: (item: ProduksiType) => item.asal_produksi.nama },
         { header: "Jenis Komoditas", accessorKey: "komoditas" as keyof ProduksiType, cell: (item: ProduksiType) => item.komoditas?.nama || "" },
-        { header: "Kualitas", accessorKey: "kualitas" as keyof ProduksiType },
+        {
+            header: "Harga per buah",
+            accessorKey: "harga_per_buah" as keyof ProduksiType,
+            cell: (item: ProduksiType) => (
+                <span className="font-medium">
+                    {item.harga_per_buah
+                        ? `Rp ${new Intl.NumberFormat("id-ID").format(item.harga_per_buah)}`
+                        : "Rp 0"}
+                </span>
+            ),
+        },
         {
             header: "Harga per kg",
             accessorKey: "harga_persatuan" as keyof ProduksiType,
@@ -96,10 +107,14 @@ export default function Produksi() {
             cell: (item: ProduksiType) => (
                 <div className="flex gap-2">
                     <button
+                        className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 transition-colors"
+                        onClick={() => setDetailItem(item)}
+                    >
+                        Detail
+                    </button>
+                    <button
                         className="tf-action tf-action-edit"
-                        onClick={() =>
-                            handleOpenUpdateModal(item)
-                        }
+                        onClick={() => handleOpenUpdateModal(item)}
                     >
                         <PenBox size={16} />
                     </button>
@@ -229,6 +244,58 @@ export default function Produksi() {
                     onConfirm={confirmDelete}
                     onCancel={() => setShowConfirm(false)}
                 />
+            )}
+
+            {detailItem && (
+                <div
+                    className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center"
+                    onClick={() => setDetailItem(null)}
+                >
+                    <div
+                        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md mx-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-white">Detail Produksi</h3>
+                            <button
+                                onClick={() => setDetailItem(null)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="px-5 py-4 space-y-3">
+                            {[
+                                { label: "Kode Produksi", value: detailItem.kode_produksi },
+                                { label: "Asal Produksi", value: detailItem.asal_produksi?.nama ?? "-" },
+                                { label: "Jenis Komoditas", value: detailItem.komoditas?.nama ?? "-" },
+                                { label: "Kualitas", value: detailItem.kualitas },
+                                { label: "Jumlah", value: detailItem.jumlah.toString() },
+                                {
+                                    label: "Harga per kg",
+                                    value: `Rp ${new Intl.NumberFormat("id-ID").format(detailItem.harga_persatuan)}`,
+                                },
+                                {
+                                    label: "Harga per buah",
+                                    value: `Rp ${new Intl.NumberFormat("id-ID").format(detailItem.harga_per_buah ?? 0)}`,
+                                },
+                            ].map(({ label, value }) => (
+                                <div key={label} className="flex items-start justify-between gap-4 text-sm">
+                                    <span className="text-gray-500 dark:text-gray-400 shrink-0 w-36">{label}</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-100 text-right">{value}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                            <button
+                                onClick={() => setDetailItem(null)}
+                                className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium transition-colors"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             <div className="mt-8">
