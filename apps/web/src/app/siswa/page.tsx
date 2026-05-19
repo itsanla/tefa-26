@@ -695,7 +695,7 @@ export default function KasirPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <a
-                href="https://github.com/itsanla/tefa-26/releases/download/v.0.2.5/pos-tefa.apk"
+                href="https://github.com/itsanla/tefa-26/releases/download/latest/pos-tefa.apk"
                 className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700"
                 rel="noopener noreferrer"
                 target="_blank"
