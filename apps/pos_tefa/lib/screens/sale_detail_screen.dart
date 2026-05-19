@@ -486,7 +486,8 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
                           Text(
                             'Ukuran: ${produksi.ukuran}  •  Kualitas: ${produksi.kualitas}',
                           ),
-                          Text('Berat: ${item.berat} ${komoditas.satuan}'),
+                          if (item.satuanJual == 'kilogram')
+                            Text('Berat: ${item.berat} ${komoditas.satuan}'),
                           Text('Jumlah: ${item.jumlahTerjual} buah'),
                           Text(
                             'Harga: ${Helpers.formatRupiah(item.hargaSatuan)}  •  Subtotal: ${Helpers.formatRupiah(item.subTotal)}',

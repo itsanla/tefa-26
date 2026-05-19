@@ -56,6 +56,7 @@ class PenjualanDetailItem {
   final int idProduksi;
   final int jumlahTerjual;
   final double berat;
+  final String satuanJual;
   final int hargaSatuan;
   final int subTotal;
   final Komoditas komoditas;
@@ -67,6 +68,7 @@ class PenjualanDetailItem {
     required this.idProduksi,
     required this.jumlahTerjual,
     required this.berat,
+    required this.satuanJual,
     required this.hargaSatuan,
     required this.subTotal,
     required this.komoditas,
@@ -80,6 +82,7 @@ class PenjualanDetailItem {
       idProduksi: Helpers.toInt(json['id_produksi'] ?? json['idProduksi']),
       jumlahTerjual: Helpers.toInt(json['jumlah_terjual']),
       berat: _toDouble(json['berat']),
+      satuanJual: (json['satuan_jual'] ?? 'kilogram').toString(),
       hargaSatuan: Helpers.toInt(json['harga_satuan']),
       subTotal: Helpers.toInt(json['sub_total']),
       komoditas: Komoditas.fromJson(json['komoditas']),
@@ -93,6 +96,7 @@ class PenjualanDetailItem {
       'idProduksi': idProduksi,
       'jumlahTerjual': jumlahTerjual,
       'berat': berat,
+      'satuanJual': satuanJual,
       'hargaSatuan': hargaSatuan,
       'subTotal': subTotal,
       'komoditas': komoditas.toJson(),

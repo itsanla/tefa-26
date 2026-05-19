@@ -37,15 +37,17 @@ class ReceiptPrinter {
         _writeLabelValue(buffer, 'Kualitas', item.produksi.kualitas);
         _writeLabelValue(
           buffer,
-          'Harga/kg',
+          'Harga/${item.satuanJual == 'kilogram' ? 'kg' : 'buah'}',
           Helpers.formatRupiah(item.hargaSatuan),
         );
         _writeLabelValue(buffer, 'Jumlah Buah', '${item.jumlahTerjual} buah');
-        _writeLabelValue(
-          buffer,
-          'Berat',
-          '${item.berat} ${item.komoditas.satuan}',
-        );
+        if (item.satuanJual == 'kilogram') {
+          _writeLabelValue(
+            buffer,
+            'Berat',
+            '${item.berat} ${item.komoditas.satuan}',
+          );
+        }
         _writeLabelValue(
           buffer,
           'Subtotal',
@@ -69,15 +71,17 @@ class ReceiptPrinter {
       buffer.writeln(_repeat('-', 32));
       _writeLabelValue(
         buffer,
-        'Harga/kg',
+        'Harga/${item.satuanJual == 'kilogram' ? 'kg' : 'buah'}',
         Helpers.formatRupiah(item.hargaSatuan),
       );
       _writeLabelValue(buffer, 'Jumlah Buah', '${item.jumlahTerjual} buah');
-      _writeLabelValue(
-        buffer,
-        'Berat',
-        '${item.berat} ${item.komoditas.satuan}',
-      );
+      if (item.satuanJual == 'kilogram') {
+        _writeLabelValue(
+          buffer,
+          'Berat',
+          '${item.berat} ${item.komoditas.satuan}',
+        );
+      }
     }
 
     buffer.writeln(_repeat('-', 32));
@@ -232,7 +236,7 @@ class ReceiptPrinter {
         bytes.addAll(
           _labelValueRow(
             generator,
-            'Harga/kg',
+            'Harga/${item.satuanJual == 'kilogram' ? 'kg' : 'buah'}',
             Helpers.formatRupiah(item.hargaSatuan),
           ),
         );
@@ -243,13 +247,15 @@ class ReceiptPrinter {
             '${item.jumlahTerjual} buah',
           ),
         );
-        bytes.addAll(
-          _labelValueRow(
-            generator,
-            'Berat',
-            '${item.berat} ${item.komoditas.satuan}',
-          ),
-        );
+        if (item.satuanJual == 'kilogram') {
+          bytes.addAll(
+            _labelValueRow(
+              generator,
+              'Berat',
+              '${item.berat} ${item.komoditas.satuan}',
+            ),
+          );
+        }
         bytes.addAll(
           _labelValueRow(
             generator,
@@ -283,20 +289,22 @@ class ReceiptPrinter {
       bytes.addAll(
         _labelValueRow(
           generator,
-          'Harga/kg',
+          'Harga/${item.satuanJual == 'kilogram' ? 'kg' : 'buah'}',
           Helpers.formatRupiah(item.hargaSatuan),
         ),
       );
       bytes.addAll(
         _labelValueRow(generator, 'Jumlah Buah', '${item.jumlahTerjual} buah'),
       );
-      bytes.addAll(
-        _labelValueRow(
-          generator,
-          'Berat',
-          '${item.berat} ${item.komoditas.satuan}',
-        ),
-      );
+      if (item.satuanJual == 'kilogram') {
+        bytes.addAll(
+          _labelValueRow(
+            generator,
+            'Berat',
+            '${item.berat} ${item.komoditas.satuan}',
+          ),
+        );
+      }
     }
 
     bytes.addAll(generator.hr(ch: '-', linesAfter: 0));

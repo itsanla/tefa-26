@@ -12,6 +12,7 @@ class Produksi {
     required this.kualitas,
     required this.jumlah,
     required this.hargaPersatuan,
+    required this.hargaPerBuah,
     required this.asalProduksi,
     required this.komoditas,
     required this.createdAt,
@@ -26,6 +27,7 @@ class Produksi {
   final String kualitas;
   final int jumlah;
   final int hargaPersatuan;
+  final int hargaPerBuah;
   final AsalProduksi? asalProduksi;
   final Komoditas? komoditas;
   final DateTime? createdAt;
@@ -44,6 +46,7 @@ class Produksi {
       kualitas: (json['kualitas'] ?? '') as String,
       jumlah: Helpers.toInt(json['jumlah']),
       hargaPersatuan: Helpers.toInt(json['harga_persatuan']),
+      hargaPerBuah: Helpers.toInt(json['harga_per_buah']),
       asalProduksi: asalObj != null ? AsalProduksi.fromJson(asalObj) : null,
       komoditas: komodObj != null ? Komoditas.fromJson(komodObj) : null,
       createdAt: Helpers.parseDateTime(json['created_at']),
@@ -60,6 +63,7 @@ class Produksi {
     'kualitas': kualitas,
     'jumlah': jumlah,
     'harga_persatuan': hargaPersatuan,
+    'harga_per_buah': hargaPerBuah,
     if (asalProduksi != null) 'asal_produksi': asalProduksi!.toJson(),
     if (komoditas != null) 'komoditas': komoditas!.toJson(),
     if (createdAt != null) 'created_at': createdAt!.toIso8601String(),

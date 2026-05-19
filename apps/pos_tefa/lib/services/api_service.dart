@@ -1,6 +1,7 @@
 // ignore_for_file: use_null_aware_elements
 
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 import 'package:pos_tefa/models/penjualan.dart';
@@ -31,10 +32,18 @@ class PenjualanListResponse {
   final int? totalItems;
 }
 
+class ProduksiListResponse {
+  ProduksiListResponse({required this.items, this.totalItems});
+
+  final List<Produksi> items;
+  final int? totalItems;
+}
+
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
+  // static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
+  static const String baseUrl = 'http://100.123.157.56:8787/api';
   final http.Client _client;
 
   Uri _uri(String path, [Map<String, Object?>? queryParameters]) {
@@ -183,9 +192,18 @@ class ApiService {
     return null;
   }
 
-  Future<List<Produksi>> getProductions(String token) async {
+  Future<ProduksiListResponse> getProductionsPage(
+    String token, {
+    int page = 1,
+    int pageSize = 10,
+    String search = '',
+  }) async {
     final response = await _client.get(
-      _uri('/produksi'),
+      _uri('/produksi', {
+        'page': page,
+        'pageSize': pageSize,
+        if (search.trim().isNotEmpty) 'search': search.trim(),
+      }),
       headers: _jsonHeaders(token: token),
     );
 
@@ -202,13 +220,57 @@ class ApiService {
 
     final data = body['data'];
     if (data is! List) {
-      return const <Produksi>[];
+      return ProduksiListResponse(items: const <Produksi>[], totalItems: 0);
     }
 
-    return data
+    final items = data
         .whereType<Map<String, dynamic>>()
         .map(Produksi.fromJson)
         .toList(growable: false);
+
+    return ProduksiListResponse(
+      items: items,
+      totalItems: _readTotalItems(body),
+    );
+  }
+
+  Future<List<Produksi>> getAllProductions(
+    String token, {
+    int pageSize = 10,
+    String search = '',
+  }) async {
+    final items = <Produksi>[];
+    var page = 1;
+    int? totalItems;
+
+    while (true) {
+      final response = await getProductionsPage(
+        token,
+        page: page,
+        pageSize: pageSize,
+        search: search,
+      );
+
+      items.addAll(response.items);
+      totalItems ??= response.totalItems;
+
+      if (response.items.length < pageSize) {
+        break;
+      }
+
+      if (totalItems != null && items.length >= totalItems) {
+        break;
+      }
+
+      page++;
+    }
+
+    return items;
+  }
+
+  Future<List<Produksi>> getProductions(String token) async {
+    final response = await getProductionsPage(token);
+    return response.items;
   }
 
   Future<PenjualanDetail> getPenjualanDetail(String token, int id) async {
@@ -311,7 +373,6 @@ class ApiService {
     if (response.statusCode == 401) {
       _throwUnauthorized();
     }
-
     if (!success || response.statusCode >= 400) {
       _throwApiError(body, statusCode: response.statusCode);
     }

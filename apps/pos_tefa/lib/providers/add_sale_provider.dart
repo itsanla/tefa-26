@@ -24,6 +24,7 @@ class AddSaleProvider extends ChangeNotifier {
   String _note = '';
   String _paymentMethod = 'lunas';
   String _firstInstallmentText = '';
+  String _selectedSatuanJual = 'kilogram';
   int _beratResetKey = 0;
   int _jumlahTerjualResetKey = 0;
 
@@ -40,9 +41,11 @@ class AddSaleProvider extends ChangeNotifier {
   String get note => _note;
   String get paymentMethod => _paymentMethod;
   String get firstInstallmentText => _firstInstallmentText;
+  String get selectedSatuanJual => _selectedSatuanJual;
   int get beratResetKey => _beratResetKey;
   int get jumlahTerjualResetKey => _jumlahTerjualResetKey;
   bool get isInstallmentPayment => _paymentMethod == 'angsuran';
+  bool get canSelectSatuanJual => _selectedProduction != null;
 
   double get totalJumlahTerjual =>
       _items.fold<double>(0, (sum, item) => sum + item.jumlahTerjual);
@@ -63,6 +66,7 @@ class AddSaleProvider extends ChangeNotifier {
   void startNewSale() {
     _items.clear();
     _selectedProduction = _productions.isEmpty ? null : _productions.first;
+    _selectedSatuanJual = 'kilogram';
     _beratText = '1';
     _jumlahTerjualText = '1';
     _note = '';
@@ -78,6 +82,19 @@ class AddSaleProvider extends ChangeNotifier {
     }
 
     _selectedProduction = production;
+    _selectedSatuanJual = 'kilogram';
+    notifyListeners();
+  }
+
+  void updateSelectedSatuanJual(String value) {
+    if (_selectedSatuanJual == value) {
+      return;
+    }
+
+    _selectedSatuanJual = value;
+    if (value == 'buah') {
+      _beratText = '1';
+    }
     notifyListeners();
   }
 
@@ -151,7 +168,12 @@ class AddSaleProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final productions = await _apiService.getProductions(token);
+      final response = await _apiService.getProductionsPage(
+        token,
+        page: 1,
+        pageSize: 10,
+      );
+      final productions = response.items;
       _productions
         ..clear()
         ..addAll(productions);
@@ -181,8 +203,8 @@ class AddSaleProvider extends ChangeNotifier {
     }
 
     final berat = double.tryParse(_beratText.replaceAll(',', '.').trim()) ?? 0;
-    if (berat <= 0) {
-      return 'Jumlah harus lebih besar dari 0';
+    if (_selectedSatuanJual == 'kilogram' && berat <= 0) {
+      return 'Jumlah berat harus lebih besar dari 0';
     }
 
     final jumlahTerjual = int.tryParse(_jumlahTerjualText.trim()) ?? 0;
@@ -196,22 +218,29 @@ class AddSaleProvider extends ChangeNotifier {
 
     if (existingIndex >= 0) {
       final existing = _items[existingIndex];
+      final mergedBerat = _selectedSatuanJual == 'kilogram'
+          ? existing.berat + berat
+          : 0.0;
       _items[existingIndex] = existing.copyWith(
-        berat: existing.berat + berat,
+        berat: mergedBerat,
         jumlahTerjual: existing.jumlahTerjual + jumlahTerjual,
+        satuanJual: _selectedSatuanJual,
       );
     } else {
       _items.add(
         CartItem(
           produksi: production,
-          berat: berat,
+          idKomodity: production.idKomoditas,
+          berat: _selectedSatuanJual == 'kilogram' ? berat : 0.0,
           jumlahTerjual: jumlahTerjual,
+          satuanJual: _selectedSatuanJual,
         ),
       );
     }
 
     _beratText = '1';
     _jumlahTerjualText = '1';
+    _selectedSatuanJual = 'kilogram';
     _beratResetKey++;
     _jumlahTerjualResetKey++;
     _errorMessage = null;
@@ -248,14 +277,20 @@ class AddSaleProvider extends ChangeNotifier {
 
     try {
       final payload = _items
-          .map(
-            (item) => {
-              'id_komodity': item.produksi.idKomoditas,
+          .map((item) {
+            final itemPayload = <String, dynamic>{
+              'id_komodity': item.idKomodity,
               'id_produksi': item.produksi.id,
-              'berat': item.berat,
               'jumlah_terjual': item.jumlahTerjual,
-            },
-          )
+              'satuan_jual': item.satuanJual,
+            };
+
+            if (item.satuanJual == 'kilogram') {
+              itemPayload['berat'] = item.berat;
+            }
+
+            return itemPayload;
+          })
           .toList(growable: false);
 
       final message = await _apiService.createPenjualan(
@@ -290,6 +325,7 @@ class AddSaleProvider extends ChangeNotifier {
     _isLoading = true;
     _isSaving = false;
     _errorMessage = null;
+    _selectedSatuanJual = 'kilogram';
     _beratText = '1';
     _jumlahTerjualText = '1';
     _note = '';

@@ -89,6 +89,237 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String _productionLabel(Produksi? production) {
+    if (production == null) {
+      return 'Pilih produksi';
+    }
+
+    return '${production.kodeProduksi} — ${production.komoditas?.nama ?? 'N/A'} (${production.komoditas?.satuan ?? 'N/A'})';
+  }
+
+  bool _matchesProductionQuery(Produksi production, String query) {
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return true;
+    }
+
+    final fields = <String>[
+      production.kodeProduksi,
+      production.komoditas?.nama ?? '',
+      production.komoditas?.satuan ?? '',
+      production.ukuran,
+      production.kualitas,
+    ];
+
+    return fields.any((field) => field.toLowerCase().contains(normalizedQuery));
+  }
+
+  Future<void> _openProductionPicker(AddSaleProvider provider) async {
+    final queryController = TextEditingController();
+    final scrollController = ScrollController();
+    final loadedProductions = <Produksi>[];
+    final api = ApiService();
+    StateSetter? sheetSetState;
+    var currentPage = 1;
+    var hasMore = true;
+    var isLoadingMore = false;
+    var initialLoadStarted = false;
+    String searchQuery = '';
+
+    Future<void> loadProductions({bool reset = false}) async {
+      if (sheetSetState == null || isLoadingMore) {
+        return;
+      }
+
+      if (reset) {
+        currentPage = 1;
+        hasMore = true;
+        loadedProductions.clear();
+      }
+
+      if (!hasMore) {
+        return;
+      }
+
+      isLoadingMore = true;
+      sheetSetState!.call(() {});
+
+      try {
+        final response = await api.getProductionsPage(
+          widget.token,
+          page: currentPage,
+          pageSize: 10,
+          search: searchQuery,
+        );
+
+        loadedProductions.addAll(response.items);
+
+        final totalItems = response.totalItems;
+        if (response.items.length < 10 ||
+            (totalItems != null && loadedProductions.length >= totalItems)) {
+          hasMore = false;
+        } else {
+          currentPage++;
+        }
+      } on ApiException catch (error) {
+        _showMessage(error.message);
+      } catch (error) {
+        _showMessage('Gagal memuat produksi: $error');
+      } finally {
+        isLoadingMore = false;
+        sheetSetState?.call(() {});
+
+        if (hasMore && scrollController.hasClients) {
+          final nearBottom =
+              scrollController.position.extentAfter < 200 &&
+              scrollController.position.maxScrollExtent > 0;
+          if (nearBottom) {
+            // ignore: discarded_futures
+            Future.microtask(() => loadProductions());
+          }
+        }
+      }
+    }
+
+    scrollController.addListener(() {
+      if (!scrollController.hasClients || isLoadingMore || !hasMore) {
+        return;
+      }
+
+      final thresholdReached =
+          scrollController.position.pixels >=
+          scrollController.position.maxScrollExtent - 200;
+      if (thresholdReached) {
+        // ignore: discarded_futures
+        loadProductions();
+      }
+    });
+
+    await showModalBottomSheet<Produksi>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setStateSheet) {
+            sheetSetState = setStateSheet;
+
+            if (!initialLoadStarted) {
+              initialLoadStarted = true;
+              Future.microtask(() => loadProductions(reset: true));
+            }
+
+            final filteredProductions = loadedProductions
+                .where(
+                  (production) =>
+                      _matchesProductionQuery(production, queryController.text),
+                )
+                .toList(growable: false);
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Pilih Produksi',
+                    style: Theme.of(sheetContext).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: queryController,
+                    decoration: const InputDecoration(
+                      labelText: 'Cari produksi',
+                      hintText: 'Kode, komoditas, ukuran, atau kualitas',
+                      prefixIcon: Icon(Icons.search_rounded),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      searchQuery = value.trim();
+                      loadProductions(reset: true);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: MediaQuery.of(sheetContext).size.height * 0.55,
+                    child: filteredProductions.isEmpty
+                        ? isLoadingMore && loadedProductions.isEmpty
+                              ? const Center(child: CircularProgressIndicator())
+                              : const Center(
+                                  child: Text('Produksi tidak ditemukan'),
+                                )
+                        : ListView.separated(
+                            controller: scrollController,
+                            itemCount: filteredProductions.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final production = filteredProductions[index];
+                              final isSelected =
+                                  provider.selectedProduction?.id ==
+                                  production.id;
+
+                              return ListTile(
+                                selected: isSelected,
+                                leading: CircleAvatar(
+                                  backgroundColor: const Color(0xFFE7F4EE),
+                                  child: Text(
+                                    production.kodeProduksi.isNotEmpty
+                                        ? production.kodeProduksi[0]
+                                        : '?',
+                                  ),
+                                ),
+                                title: Text(
+                                  production.kodeProduksi,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${production.komoditas?.nama ?? 'N/A'} • ${production.ukuran} • ${production.kualitas}',
+                                ),
+                                trailing: isSelected
+                                    ? const Icon(Icons.check_circle_rounded)
+                                    : null,
+                                onTap: () {
+                                  Navigator.of(sheetContext).pop(production);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                  if (isLoadingMore) ...[
+                    const SizedBox(height: 12),
+                    const Center(child: CircularProgressIndicator()),
+                  ] else if (hasMore && loadedProductions.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Center(
+                      child: Text('Gulir untuk memuat data berikutnya'),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).then((selected) {
+      if (selected != null) {
+        provider.updateSelectedProduction(selected);
+      }
+    });
+
+    queryController.dispose();
+    scrollController.dispose();
+  }
+
   Future<void> _editItem(AddSaleProvider provider, CartItem item) async {
     final beratController = TextEditingController(
       text: provider.formatQuantity(item.berat),
@@ -96,72 +327,118 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
     final jumlahController = TextEditingController(
       text: item.jumlahTerjual.toString(),
     );
+    String selectedSatuanJual = item.satuanJual;
 
     final updated = await showDialog<CartItem>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Edit Item'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${item.produksi.kodeProduksi} — ${item.produksi.komoditas?.nama ?? '-'}',
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: beratController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah berat',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: jumlahController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah buah',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Batal'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final berat =
-                    double.tryParse(
-                      beratController.text.replaceAll(',', '.').trim(),
-                    ) ??
-                    0;
-                final jumlah = int.tryParse(jumlahController.text.trim()) ?? 0;
-
-                if (berat <= 0 || jumlah <= 0) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Berat dan jumlah buah harus lebih besar dari 0',
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            return AlertDialog(
+              title: const Text('Edit Item'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${item.produksi.kodeProduksi} — ${item.produksi.komoditas?.nama ?? '-'}',
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: selectedSatuanJual,
+                    decoration: const InputDecoration(
+                      labelText: 'Satuan Jual',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'kilogram',
+                        child: Text('Per Kilogram (kg)'),
+                      ),
+                      DropdownMenuItem(value: 'buah', child: Text('Per Buah')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedSatuanJual = value;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  if (selectedSatuanJual == 'kilogram')
+                    TextFormField(
+                      controller: beratController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Jumlah berat (kg)',
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                  );
-                  return;
-                }
+                  if (selectedSatuanJual == 'kilogram')
+                    const SizedBox(height: 12),
+                  TextFormField(
+                    controller: jumlahController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Jumlah buah',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Batal'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final berat =
+                        double.tryParse(
+                          beratController.text.replaceAll(',', '.').trim(),
+                        ) ??
+                        0;
+                    final jumlah =
+                        int.tryParse(jumlahController.text.trim()) ?? 0;
 
-                Navigator.of(
-                  dialogContext,
-                ).pop(item.copyWith(berat: berat, jumlahTerjual: jumlah));
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
+                    if (selectedSatuanJual == 'kilogram' && berat <= 0) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Berat harus lebih besar dari 0'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (jumlah <= 0) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Jumlah buah harus lebih besar dari 0'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final finalBerat = selectedSatuanJual == 'kilogram'
+                        ? berat
+                        : 0.0;
+
+                    Navigator.of(dialogContext).pop(
+                      item.copyWith(
+                        berat: finalBerat,
+                        jumlahTerjual: jumlah,
+                        satuanJual: selectedSatuanJual,
+                      ),
+                    );
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -205,28 +482,27 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                         ),
                       if (provider.errorMessage != null)
                         const SizedBox(height: 12),
-                      DropdownButtonFormField<Produksi>(
+                      TextFormField(
+                        readOnly: true,
                         key: ValueKey(
                           provider.selectedProduction?.id ?? 'none',
                         ),
-                        isExpanded: true,
-                        initialValue: provider.selectedProduction,
-                        decoration: const InputDecoration(
-                          labelText: 'Pilih Produksi',
-                          border: OutlineInputBorder(),
+                        initialValue: _productionLabel(
+                          provider.selectedProduction,
                         ),
-                        items: provider.productions
-                            .map(
-                              (production) => DropdownMenuItem(
-                                value: production,
-                                child: Text(
-                                  '${production.kodeProduksi} — ${production.komoditas?.nama ?? 'N/A'} (${production.komoditas?.satuan ?? 'N/A'})',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(growable: false),
-                        onChanged: provider.updateSelectedProduction,
+                        decoration: InputDecoration(
+                          labelText: 'Pilih Produksi',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.search_rounded),
+                            onPressed: provider.isSaving
+                                ? null
+                                : () => _openProductionPicker(provider),
+                          ),
+                        ),
+                        onTap: provider.isSaving
+                            ? null
+                            : () => _openProductionPicker(provider),
                       ),
                       const SizedBox(height: 8),
                       if (provider.selectedProduction != null)
@@ -246,20 +522,51 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                                 ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        key: ValueKey(provider.beratResetKey),
-                        initialValue: provider.beratText,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                      if (provider.selectedProduction != null &&
+                          provider.canSelectSatuanJual) ...[
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          initialValue: provider.selectedSatuanJual,
+                          decoration: const InputDecoration(
+                            labelText: 'Satuan Jual',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'kilogram',
+                              child: Text('Per Kilogram (kg)'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'buah',
+                              child: Text('Per Buah'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              provider.updateSelectedSatuanJual(value);
+                            }
+                          },
                         ),
-                        decoration: const InputDecoration(
-                          labelText: 'Jumlah berat',
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: provider.updateBerat,
-                      ),
+                      ],
                       const SizedBox(height: 12),
+                      if (provider.selectedProduction != null &&
+                          provider.selectedSatuanJual == 'kilogram')
+                        TextFormField(
+                          key: ValueKey(provider.beratResetKey),
+                          initialValue: provider.beratText,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Jumlah berat (kg)',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: provider.updateBerat,
+                        ),
+                      if (provider.selectedProduction != null &&
+                          provider.selectedSatuanJual == 'kilogram')
+                        const SizedBox(height: 12),
                       TextFormField(
                         key: ValueKey('buah-${provider.jumlahTerjualResetKey}'),
                         initialValue: provider.jumlahTerjualText,
@@ -330,8 +637,12 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                                     'Ukuran: ${item.produksi.ukuran}  •  Kualitas: ${item.produksi.kualitas}',
                                   ),
                                   Text(
-                                    'Berat: ${provider.formatQuantity(item.berat)} ${item.produksi.komoditas?.satuan ?? ''}',
+                                    'Satuan Jual: ${item.satuanJual == 'kilogram' ? 'Per Kilogram' : 'Per Buah'}',
                                   ),
+                                  if (item.satuanJual == 'kilogram')
+                                    Text(
+                                      'Berat: ${provider.formatQuantity(item.berat)} ${item.produksi.komoditas?.satuan ?? ''}',
+                                    ),
                                   Text('Jumlah buah: ${item.jumlahTerjual}'),
                                   Text(
                                     'Subtotal: ${Helpers.formatRupiah(item.subtotal)}',
