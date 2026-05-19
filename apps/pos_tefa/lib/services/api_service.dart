@@ -1,7 +1,6 @@
 // ignore_for_file: use_null_aware_elements
 
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 import 'package:pos_tefa/models/penjualan.dart';
@@ -42,8 +41,7 @@ class ProduksiListResponse {
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  // static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
-  static const String baseUrl = 'http://100.123.157.56:8787/api';
+  static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
   final http.Client _client;
 
   Uri _uri(String path, [Map<String, Object?>? queryParameters]) {
