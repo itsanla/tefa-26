@@ -15,6 +15,7 @@ import { asalProduksiApp } from "./routes/asal_produksi";
 import { preferenceApp } from "./routes/preference";
 import { analyticsApp } from "./routes/analytics";
 import { bahanBakuApp } from "./routes/bahan_baku";
+import { stokVariabelApp } from "./routes/stok_variabel";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -54,6 +55,9 @@ api.route("/transaksi-barang", transaksiBarangApp);
 
 api.use("/produksi/*", jwtCheckToken, isRole(["admin", "guru", "siswa", "kepsek"]));
 api.route("/produksi", produksiApp);
+
+api.use("/stok-variabel/*", jwtCheckToken, isRole(["admin", "guru", "siswa", "kepsek"]));
+api.route("/stok-variabel", stokVariabelApp);
 
 api.use("/penjualan/*", jwtCheckToken, isRole(["admin", "guru", "siswa", "kepsek"]));
 api.route("/penjualan", penjualanApp);

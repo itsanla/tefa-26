@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   asalProduksiTable,
@@ -7,6 +7,7 @@ import {
   penjualanItemTabel,
   produksiTable,
   stokHistoriProduksiTable,
+  stokVariabelTable,
 } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
@@ -40,7 +41,7 @@ produksiApp.get("/", async (c) => {
 
     const data = await Promise.all(
       produksis.map(async (p) => {
-        const [asal, komoditas, penjualans] = await Promise.all([
+        const [asal, komoditas, penjualans, stok_variabel] = await Promise.all([
           db
             .select()
             .from(asalProduksiTable)
@@ -58,12 +59,20 @@ produksiApp.get("/", async (c) => {
             .from(penjualanItemTabel)
             .where(eq(penjualanItemTabel.id_produksi, p.id))
             .all(),
+          p.id_stok_variabel
+            ? db
+                .select()
+                .from(stokVariabelTable)
+                .where(eq(stokVariabelTable.id, p.id_stok_variabel))
+                .get()
+            : Promise.resolve(null),
         ]);
         return convertTimestamps({
           ...p,
           asal_produksi: asal,
           komoditas,
           penjualans,
+          stok_variabel,
         });
       }),
     );
@@ -148,6 +157,7 @@ produksiApp.post("/", async (c) => {
     const body = await c.req.json<{
       id_asal?: number | string;
       id_komoditas?: number | string;
+      id_stok_variabel?: number | string | null;
       kode_produksi?: string;
       ukuran?: string;
       kualitas?: string;
@@ -180,18 +190,41 @@ produksiApp.post("/", async (c) => {
 
     const id_asal = Number(body.id_asal);
     const id_komoditas = Number(body.id_komoditas);
-    const jumlah_diproduksi = Number(body.jumlah_diproduksi);
+    const id_stok_variabel =
+      body.id_stok_variabel != null && body.id_stok_variabel !== ""
+        ? Number(body.id_stok_variabel)
+        : null;
     const harga_persatuan = Number(body.harga_persatuan);
     const harga_per_buah = Number(body.harga_per_buah ?? 0);
 
-    if (!Number.isFinite(jumlah_diproduksi) || jumlah_diproduksi <= 0) {
-      throw new AppError("Jumlah diproduksi harus berupa angka > 0", 400);
-    }
     if (!Number.isFinite(harga_persatuan) || harga_persatuan <= 0) {
       throw new AppError("Harga persatuan harus berupa angka >= 0", 400);
     }
 
     const db = getDb(c.env);
+
+    // Determine the starting stock: a linked stok variabel (shared pool) takes
+    // precedence over the manually entered jumlah_diproduksi.
+    let jumlah_awal: number;
+    if (id_stok_variabel) {
+      const variabel = await db
+        .select()
+        .from(stokVariabelTable)
+        .where(
+          and(
+            eq(stokVariabelTable.id, id_stok_variabel),
+            eq(stokVariabelTable.isDeleted, 0),
+          ),
+        )
+        .get();
+      if (!variabel) throw new AppError("Variabel stok tidak ditemukan", 404);
+      jumlah_awal = variabel.jumlah;
+    } else {
+      jumlah_awal = Number(body.jumlah_diproduksi);
+      if (!Number.isFinite(jumlah_awal) || jumlah_awal <= 0) {
+        throw new AppError("Jumlah diproduksi harus berupa angka > 0", 400);
+      }
+    }
 
     const komoditas = await db
       .select()
@@ -203,7 +236,7 @@ produksiApp.post("/", async (c) => {
     await db
       .update(komoditasTable)
       .set({
-        jumlah: sql`${komoditasTable.jumlah} + ${jumlah_diproduksi}`,
+        jumlah: sql`${komoditasTable.jumlah} + ${jumlah_awal}`,
         updatedAt: Math.floor(Date.now() / 1000),
       })
       .where(eq(komoditasTable.id, id_komoditas));
@@ -213,10 +246,11 @@ produksiApp.post("/", async (c) => {
       .values({
         id_asal,
         id_komoditas,
+        id_stok_variabel,
         kode_produksi: body.kode_produksi!,
         ukuran: body.ukuran ?? "",
         kualitas: body.kualitas!,
-        jumlah: jumlah_diproduksi,
+        jumlah: jumlah_awal,
         harga_persatuan,
         harga_per_buah,
       })
@@ -226,10 +260,12 @@ produksiApp.post("/", async (c) => {
       id_produksi: newProduksi.id,
       kode_produksi: newProduksi.kode_produksi,
       jumlah_sebelum: 0,
-      jumlah_sesudah: jumlah_diproduksi,
-      selisih: jumlah_diproduksi,
+      jumlah_sesudah: jumlah_awal,
+      selisih: jumlah_awal,
       tipe: "buat",
-      keterangan: "Produksi baru dibuat",
+      keterangan: id_stok_variabel
+        ? "Produksi baru dibuat (mengikuti variabel stok)"
+        : "Produksi baru dibuat",
     });
 
     return c.json(
@@ -250,6 +286,7 @@ produksiApp.put("/:id", async (c) => {
     const id = Number(c.req.param("id"));
     const body = await c.req.json<{
       id_asal?: number | string;
+      id_stok_variabel?: number | string | null;
       kode_produksi?: string;
       ukuran?: string;
       kualitas?: string;
@@ -280,9 +317,36 @@ produksiApp.put("/:id", async (c) => {
       .get();
     if (!produksi) throw new AppError("Produksi tidak ditemukan", 404);
 
-    const jumlah = Number(body.jumlah_diproduksi);
+    const id_stok_variabel =
+      body.id_stok_variabel != null && body.id_stok_variabel !== ""
+        ? Number(body.id_stok_variabel)
+        : null;
     const harga_persatuan = Number(body.harga_persatuan);
     const harga_per_buah = Number(body.harga_per_buah ?? 0);
+
+    // When linked to a variabel, the produksi adopts the shared pool value;
+    // otherwise the manually entered jumlah is used.
+    let jumlah: number;
+    if (id_stok_variabel) {
+      const variabel = await db
+        .select()
+        .from(stokVariabelTable)
+        .where(
+          and(
+            eq(stokVariabelTable.id, id_stok_variabel),
+            eq(stokVariabelTable.isDeleted, 0),
+          ),
+        )
+        .get();
+      if (!variabel) throw new AppError("Variabel stok tidak ditemukan", 404);
+      jumlah = variabel.jumlah;
+    } else {
+      jumlah = Number(body.jumlah_diproduksi);
+      if (!Number.isFinite(jumlah) || jumlah < 0) {
+        throw new AppError("Jumlah harus berupa angka >= 0", 400);
+      }
+    }
+
     const selisih = jumlah - produksi.jumlah;
 
     if (produksi.id_komoditas) {
@@ -308,6 +372,7 @@ produksiApp.put("/:id", async (c) => {
       .update(produksiTable)
       .set({
         id_asal: Number(body.id_asal),
+        id_stok_variabel,
         kode_produksi: body.kode_produksi!,
         ukuran: body.ukuran ?? "",
         kualitas: body.kualitas!,
@@ -349,6 +414,20 @@ produksiApp.delete("/:id", async (c) => {
       .where(eq(produksiTable.id, id))
       .get();
     if (!produksi) throw new AppError("Produksi tidak ditemukan", 404);
+
+    // Produksi yang sudah pernah terjual tidak boleh dihapus agar riwayat
+    // penjualan tetap utuh. Cek dulu sebelum menyentuh stok apa pun.
+    const penjualanRef = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(penjualanItemTabel)
+      .where(eq(penjualanItemTabel.id_produksi, id))
+      .get();
+    if (Number(penjualanRef?.count ?? 0) > 0) {
+      throw new AppError(
+        "Produksi tidak dapat dihapus karena sudah memiliki transaksi penjualan.",
+        400,
+      );
+    }
 
     await db.insert(stokHistoriProduksiTable).values({
       id_produksi: produksi.id,

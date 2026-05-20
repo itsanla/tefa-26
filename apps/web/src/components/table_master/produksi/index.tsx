@@ -55,9 +55,13 @@ export default function Produksi() {
                 toast.success("Data berhasil dihapus.");
                 refresh(1);
                 refreshHistory(1);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Gagal hapus data Produksi", error);
-                toast.error("Gagal menghapus data.")
+                const message =
+                    error?.response?.data?.message ||
+                    error?.message ||
+                    "Gagal menghapus data.";
+                toast.error(message);
             } finally {
                 setShowConfirm(false);
                 setDeleteId(null);
@@ -76,7 +80,6 @@ export default function Produksi() {
             ).toString(),
         },
         { header: "Kode Produksi", accessorKey: "kode_produksi" as keyof ProduksiType },
-        { header: "Asal Produksi", accessorKey: "asal_produksi" as keyof ProduksiType, cell: (item: ProduksiType) => item.asal_produksi.nama },
         { header: "Jenis Komoditas", accessorKey: "komoditas" as keyof ProduksiType, cell: (item: ProduksiType) => item.komoditas?.nama || "" },
         {
             header: "Harga per buah",
@@ -101,6 +104,20 @@ export default function Produksi() {
             ),
         },
         { header: "Jumlah Produksi", accessorKey: "jumlah" as keyof ProduksiType },
+        {
+            header: "Sumber Stok",
+            accessorKey: "stok_variabel" as keyof ProduksiType,
+            cell: (item: ProduksiType) =>
+                item.stok_variabel ? (
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200">
+                        {item.stok_variabel.nama}
+                    </span>
+                ) : (
+                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        Manual
+                    </span>
+                ),
+        },
         {
             header: "Aksi",
             accessorKey: "id" as keyof ProduksiType,
@@ -270,6 +287,7 @@ export default function Produksi() {
                                 { label: "Asal Produksi", value: detailItem.asal_produksi?.nama ?? "-" },
                                 { label: "Jenis Komoditas", value: detailItem.komoditas?.nama ?? "-" },
                                 { label: "Kualitas", value: detailItem.kualitas },
+                                { label: "Sumber Stok", value: detailItem.stok_variabel ? `Variabel: ${detailItem.stok_variabel.nama}` : "Manual" },
                                 { label: "Jumlah", value: detailItem.jumlah.toString() },
                                 {
                                     label: "Harga per kg",

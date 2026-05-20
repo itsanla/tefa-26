@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/landing/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
+import { Toaster as HotToaster } from "react-hot-toast";
 import AuthGuard from "@/components/common/AuthGuard";
 
 const geistSans = localFont({
@@ -202,6 +203,7 @@ export default function RootLayout({
         <AuthGuard>{children}</AuthGuard>
         <Toaster/>
         <SonnerToaster position="top-right" richColors />
+        <HotToaster position="top-right" />
       </body>
     </html>
   );

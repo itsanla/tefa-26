@@ -83,6 +83,7 @@ export default function DashboardSidebar({
       childern: [
         { name: "Daftar Produksi", href: "/dashboard/produksi/produksi" },
         { name: "Asal Produksi", href: "/dashboard/produksi/asal_produksi" },
+        { name: "Variabel Stok", href: "/dashboard/stok" },
       ],
     },
     {

@@ -81,13 +81,18 @@ export default function InputProduksiForm({
     const [keterangan, setKeterangan] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const [stokMode, setStokMode] = useState<"manual" | "variabel">("manual");
+    const [id_stok_variabel, setIdStokVariabel] = useState("");
+
     const [asalList, setAsalList] = useState<any[]>([]);
     const [komoditasList, setKomoditasList] = useState<any[]>([]);
+    const [stokVariabelList, setStokVariabelList] = useState<any[]>([]);
 
 
     useEffect(() => {
         fetchDataAsal();
         fetchDataKomoditas();
+        fetchDataStokVariabel();
 
         if (formMode === "update" && initialData) {
             setId_Asal(initialData.id_asal?.toString() || "");
@@ -99,8 +104,22 @@ export default function InputProduksiForm({
             setHargaPerBuah(initialData.harga_per_buah?.toString() || "");
             setIsCustomKualitas(initialData.kualitas && !["Medium", "Premium"].includes(initialData.kualitas));
             setKeterangan("");
+            if (initialData.id_stok_variabel) {
+                setStokMode("variabel");
+                setIdStokVariabel(initialData.id_stok_variabel.toString());
+            } else {
+                setStokMode("manual");
+                setIdStokVariabel("");
+            }
+        } else if (formMode === "create") {
+            setStokMode("manual");
+            setIdStokVariabel("");
         }
     }, [formMode, initialData]);
+
+    const selectedVariabel = stokVariabelList.find(
+        (variabel) => variabel.id.toString() === id_stok_variabel,
+    );
 
     const fetchDataAsal = async () => {
         try {
@@ -126,8 +145,26 @@ export default function InputProduksiForm({
         }
     };
 
+    const fetchDataStokVariabel = async () => {
+        try {
+            const data = await fetchAllPages({
+                endpoint: "/stok-variabel",
+            });
+            setStokVariabelList(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Gagal ambil data Variabel Stok:", error);
+            toast.error("Gagal mengambil data variabel stok.");
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (stokMode === "variabel" && !id_stok_variabel) {
+            toast.error("Pilih variabel stok terlebih dahulu.");
+            return;
+        }
+
         setLoading(true);
 
         const payload: Record<string, unknown> = {
@@ -135,10 +172,15 @@ export default function InputProduksiForm({
             id_komoditas: parseInt(id_komoditas),
             kode_produksi,
             kualitas,
-            jumlah_diproduksi: parseInt(jumlah_diproduksi),
             harga_persatuan: parseFloat(harga_persatuan),
             harga_per_buah: parseFloat(harga_per_buah) || 0,
         };
+        if (stokMode === "variabel") {
+            payload.id_stok_variabel = parseInt(id_stok_variabel);
+        } else {
+            payload.id_stok_variabel = null;
+            payload.jumlah_diproduksi = parseInt(jumlah_diproduksi);
+        }
         if (formMode === "update") {
             payload.keterangan = keterangan;
         }
@@ -251,15 +293,54 @@ export default function InputProduksiForm({
                         />
                     )}
 
-                    <label>Jumlah</label>
-                    <input
-                        type="number" // Changed to number type
-                        placeholder={`Dalam buah`}
-                        value={jumlah_diproduksi}
-                        onChange={(e) => setJumlahDiproduksi(e.target.value)}
-                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="0" // Allow 0 as input
-                    />
+                    <label>Sumber Stok</label>
+                    <select
+                        value={stokMode}
+                        onChange={(e) => setStokMode(e.target.value as "manual" | "variabel")}
+                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                    >
+                        <option value="manual">Input Manual</option>
+                        <option value="variabel">Gunakan Variabel Stok</option>
+                    </select>
+
+                    {stokMode === "manual" ? (
+                        <>
+                            <label>Jumlah</label>
+                            <input
+                                type="number"
+                                placeholder={`Dalam buah`}
+                                value={jumlah_diproduksi}
+                                onChange={(e) => setJumlahDiproduksi(e.target.value)}
+                                className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                min="0"
+                                required
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <label>Variabel Stok</label>
+                            <select
+                                value={id_stok_variabel}
+                                onChange={(e) => setIdStokVariabel(e.target.value)}
+                                className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                                required
+                            >
+                                <option value="">Pilih Variabel Stok</option>
+                                {stokVariabelList.map((variabel) => (
+                                    <option key={variabel.id} value={variabel.id}>
+                                        {variabel.nama} (stok: {variabel.jumlah})
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="col-span-2 -mt-2">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {selectedVariabel
+                                        ? `Stok mengikuti variabel "${selectedVariabel.nama}" = ${selectedVariabel.jumlah}. Mengubah nilai variabel akan tersinkron ke semua produksi yang memakainya.`
+                                        : "Pilih variabel stok yang sudah didefinisikan di menu Variabel Stok."}
+                                </p>
+                            </div>
+                        </>
+                    )}
 
                     <label>Harga per kg</label>
                     <input

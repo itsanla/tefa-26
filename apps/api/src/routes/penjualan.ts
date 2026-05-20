@@ -14,6 +14,7 @@ import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import { convertTimestamps, unixToISO } from "../utils/date";
 import { buildPaginationMeta, parsePagination } from "../utils/pagination";
+import { adjustProduksiStockDelta } from "../utils/produksi_stock";
 import type { Env, Variables } from "../types";
 
 async function loadPenjualanSummary(
@@ -686,9 +687,10 @@ penjualanApp.post("/", async (c) => {
           id: item.komoditas.id,
           jumlah: item.komoditas.jumlah,
         });
+        // Stores the qty to re-add on rollback (shared-pool aware).
         rollbackProduksi.push({
           id: item.produksi.id,
-          jumlah: item.produksi.jumlah,
+          jumlah: item.jumlah_terjual,
         });
 
         await db
@@ -699,13 +701,7 @@ penjualanApp.post("/", async (c) => {
           })
           .where(eq(komoditasTable.id, item.id_komodity));
 
-        await db
-          .update(produksiTable)
-          .set({
-            jumlah: item.produksi.jumlah - item.jumlah_terjual,
-            updatedAt: now,
-          })
-          .where(eq(produksiTable.id, item.id_produksi));
+        await adjustProduksiStockDelta(db, item.id_produksi, -item.jumlah_terjual, now);
 
         const [newItem] = await db
           .insert(penjualanItemTabel)
@@ -740,10 +736,7 @@ penjualanApp.post("/", async (c) => {
       }
 
       for (const item of rollbackProduksi) {
-        await db
-          .update(produksiTable)
-          .set({ jumlah: item.jumlah, updatedAt: now })
-          .where(eq(produksiTable.id, item.id));
+        await adjustProduksiStockDelta(db, item.id, item.jumlah, now);
       }
 
       await db
@@ -1128,10 +1121,7 @@ penjualanApp.put("/:id", async (c) => {
           .update(komoditasTable)
           .set({ jumlah: sql`${komoditasTable.jumlah} + ${old.jumlah_terjual}`, updatedAt: now })
           .where(eq(komoditasTable.id, old.id_komodity));
-        await db
-          .update(produksiTable)
-          .set({ jumlah: sql`${produksiTable.jumlah} + ${old.jumlah_terjual}`, updatedAt: now })
-          .where(eq(produksiTable.id, old.id_produksi));
+        await adjustProduksiStockDelta(db, old.id_produksi, old.jumlah_terjual, now);
         restoredKomoditasLog.push({ id: old.id_komodity, qty: old.jumlah_terjual });
         restoredProduksiLog.push({ id: old.id_produksi, qty: old.jumlah_terjual });
       }
@@ -1146,10 +1136,7 @@ penjualanApp.put("/:id", async (c) => {
           .update(komoditasTable)
           .set({ jumlah: sql`${komoditasTable.jumlah} - ${item.jumlah_terjual}`, updatedAt: now })
           .where(eq(komoditasTable.id, item.id_komodity));
-        await db
-          .update(produksiTable)
-          .set({ jumlah: sql`${produksiTable.jumlah} - ${item.jumlah_terjual}`, updatedAt: now })
-          .where(eq(produksiTable.id, item.id_produksi));
+        await adjustProduksiStockDelta(db, item.id_produksi, -item.jumlah_terjual, now);
         newDeductedKomoditas.push({ id: item.id_komodity, qty: item.jumlah_terjual });
         newDeductedProduksi.push({ id: item.id_produksi, qty: item.jumlah_terjual });
 
@@ -1242,10 +1229,7 @@ penjualanApp.put("/:id", async (c) => {
           .where(eq(komoditasTable.id, k.id));
       }
       for (const p of newDeductedProduksi) {
-        await db
-          .update(produksiTable)
-          .set({ jumlah: sql`${produksiTable.jumlah} + ${p.qty}`, updatedAt: now })
-          .where(eq(produksiTable.id, p.id));
+        await adjustProduksiStockDelta(db, p.id, p.qty, now);
       }
       // Re-insert old items if they were deleted
       if (oldItemsDeleted) {
@@ -1272,10 +1256,7 @@ penjualanApp.put("/:id", async (c) => {
           .where(eq(komoditasTable.id, k.id));
       }
       for (const p of restoredProduksiLog) {
-        await db
-          .update(produksiTable)
-          .set({ jumlah: sql`${produksiTable.jumlah} - ${p.qty}`, updatedAt: now })
-          .where(eq(produksiTable.id, p.id));
+        await adjustProduksiStockDelta(db, p.id, -p.qty, now);
       }
       throw error;
     }
@@ -1322,10 +1303,7 @@ penjualanApp.delete("/:id", async (c) => {
         .update(komoditasTable)
         .set({ jumlah: sql`${komoditasTable.jumlah} + ${item.jumlah_terjual}`, updatedAt: now })
         .where(eq(komoditasTable.id, item.id_komodity));
-      await db
-        .update(produksiTable)
-        .set({ jumlah: sql`${produksiTable.jumlah} + ${item.jumlah_terjual}`, updatedAt: now })
-        .where(eq(produksiTable.id, item.id_produksi));
+      await adjustProduksiStockDelta(db, item.id_produksi, item.jumlah_terjual, now);
     }
 
     await db

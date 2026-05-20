@@ -62,6 +62,19 @@ export const asalProduksiTable = sqliteTable("AsalProduksi", {
     .default(sql`(unixepoch())`),
 });
 
+export const stokVariabelTable = sqliteTable("StokVariabel", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  nama: text("nama").notNull(),
+  jumlah: integer("jumlah").notNull().default(0),
+  isDeleted: integer("isDeleted").notNull().default(0),
+  createdAt: integer("createdAt")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updatedAt")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 export const produksiTable = sqliteTable("Produksi", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   id_asal: integer("id_asal")
@@ -70,6 +83,10 @@ export const produksiTable = sqliteTable("Produksi", {
   id_komoditas: integer("id_komoditas").references(() => komoditasTable.id, {
     onDelete: "cascade",
   }),
+  id_stok_variabel: integer("id_stok_variabel").references(
+    () => stokVariabelTable.id,
+    { onDelete: "set null" },
+  ),
   kode_produksi: text("kode_produksi").notNull(),
   ukuran: text("ukuran").notNull(),
   kualitas: text("kualitas").notNull(),
@@ -185,8 +202,19 @@ export const produksiRelations = relations(produksiTable, ({ one, many }) => ({
     fields: [produksiTable.id_komoditas],
     references: [komoditasTable.id],
   }),
+  stok_variabel: one(stokVariabelTable, {
+    fields: [produksiTable.id_stok_variabel],
+    references: [stokVariabelTable.id],
+  }),
   penjualanItems: many(penjualanItemTabel),
 }));
+
+export const stokVariabelRelations = relations(
+  stokVariabelTable,
+  ({ many }) => ({
+    produksis: many(produksiTable),
+  }),
+);
 
 export const pembayaranPenjualanTable = sqliteTable("PembayaranPenjualan", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -289,3 +317,4 @@ export type Barang = typeof barangTable.$inferSelect;
 export type TransaksiBarang = typeof transaksiBarangTable.$inferSelect;
 export type BahanBaku = typeof bahanBakuTable.$inferSelect;
 export type StokHistoriProduksi = typeof stokHistoriProduksiTable.$inferSelect;
+export type StokVariabel = typeof stokVariabelTable.$inferSelect;

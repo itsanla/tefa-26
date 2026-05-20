@@ -39,10 +39,20 @@ export interface AsalProduksi {
   updatedAt: string;
 }
 
+export interface StokVariabel {
+  id: number;
+  nama: string;
+  jumlah: number;
+  jumlah_produksi?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Produksi {
   id: number;
   id_asal: number;
   id_komoditas: number;
+  id_stok_variabel: number | null;
   jumlah: number;
   kode_produksi: string;
   harga_persatuan: number;
@@ -53,6 +63,7 @@ export interface Produksi {
   updatedAt: string;
   asal_produksi: AsalProduksi;
   komoditas: Komoditas;
+  stok_variabel?: StokVariabel | null;
 }
 
 export interface PenjualanItem {
