@@ -2,6 +2,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:pos_tefa/models/penjualan.dart';
 import 'package:pos_tefa/models/sale_receipt.dart';
 import 'package:pos_tefa/utils/helpers.dart';
+import '../models/value_enums.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 class PrintReceiptResult {
@@ -37,11 +38,11 @@ class ReceiptPrinter {
         _writeLabelValue(buffer, 'Kualitas', item.produksi.kualitas);
         _writeLabelValue(
           buffer,
-          'Harga/${item.satuanJual == 'kilogram' ? 'kg' : 'buah'}',
+          'Harga/${UnitExt.fromString(item.satuanJual) == Unit.kilogram ? 'kg' : 'buah'}',
           Helpers.formatRupiah(item.hargaSatuan),
         );
         _writeLabelValue(buffer, 'Jumlah Buah', '${item.jumlahTerjual} buah');
-        if (item.satuanJual == 'kilogram') {
+        if (UnitExt.fromString(item.satuanJual) == Unit.kilogram) {
           _writeLabelValue(
             buffer,
             'Berat',
@@ -71,11 +72,11 @@ class ReceiptPrinter {
       buffer.writeln(_repeat('-', 32));
       _writeLabelValue(
         buffer,
-        'Harga/${item.satuanJual == 'kilogram' ? 'kg' : 'buah'}',
+        'Harga/${UnitExt.fromString(item.satuanJual) == Unit.kilogram ? 'kg' : 'buah'}',
         Helpers.formatRupiah(item.hargaSatuan),
       );
       _writeLabelValue(buffer, 'Jumlah Buah', '${item.jumlahTerjual} buah');
-      if (item.satuanJual == 'kilogram') {
+      if (UnitExt.fromString(item.satuanJual) == Unit.kilogram) {
         _writeLabelValue(
           buffer,
           'Berat',
@@ -247,7 +248,7 @@ class ReceiptPrinter {
             '${item.jumlahTerjual} buah',
           ),
         );
-        if (item.satuanJual == 'kilogram') {
+        if (UnitExt.fromString(item.satuanJual) == Unit.kilogram) {
           bytes.addAll(
             _labelValueRow(
               generator,
@@ -289,14 +290,14 @@ class ReceiptPrinter {
       bytes.addAll(
         _labelValueRow(
           generator,
-          'Harga/${item.satuanJual == 'kilogram' ? 'kg' : 'buah'}',
+          'Harga/${UnitExt.fromString(item.satuanJual) == Unit.kilogram ? 'kg' : 'buah'}',
           Helpers.formatRupiah(item.hargaSatuan),
         ),
       );
       bytes.addAll(
         _labelValueRow(generator, 'Jumlah Buah', '${item.jumlahTerjual} buah'),
       );
-      if (item.satuanJual == 'kilogram') {
+      if (UnitExt.fromString(item.satuanJual) == Unit.kilogram) {
         bytes.addAll(
           _labelValueRow(
             generator,

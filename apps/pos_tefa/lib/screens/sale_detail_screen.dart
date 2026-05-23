@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/app_models.dart';
 import '../models/penjualan.dart';
+import '../models/value_enums.dart';
 import '../providers/sales_provider.dart';
 import '../services/api_service.dart';
 import '../services/receipt_printer.dart';
@@ -486,7 +487,8 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
                           Text(
                             'Ukuran: ${produksi.ukuran}  •  Kualitas: ${produksi.kualitas}',
                           ),
-                          if (item.satuanJual == 'kilogram')
+                          if (UnitExt.fromString(item.satuanJual) ==
+                              Unit.kilogram)
                             Text('Berat: ${item.berat} ${komoditas.satuan}'),
                           Text('Jumlah: ${item.jumlahTerjual} buah'),
                           Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../utils/helpers.dart';
 
@@ -36,6 +37,7 @@ class CurrencyInputField extends StatelessWidget {
     this.prefixText,
     this.decoration,
     this.controller,
+    this.focusNode,
   });
 
   final String labelText;
@@ -44,12 +46,44 @@ class CurrencyInputField extends StatelessWidget {
   final String? prefixText;
   final InputDecoration? decoration;
   final TextEditingController? controller;
+  final FocusNode? focusNode;
+
+  /// Parse a formatted currency string (e.g. "12.345") into an integer value.
+  /// Returns null when parsing fails or string is empty.
+  static int? parseToInt(String text) {
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return null;
+    return int.tryParse(digits);
+  }
 
   @override
   Widget build(BuildContext context) {
+    // If controller provided and empty, populate it from initialValue once.
+    if (controller != null &&
+        controller!.text.isEmpty &&
+        initialValue.isNotEmpty) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (controller!.text.isEmpty) {
+          final parsed =
+              int.tryParse(initialValue.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+          controller!.text = Helpers.formatCurrency(parsed);
+        }
+      });
+    }
+
     return TextFormField(
+      focusNode: focusNode,
       controller: controller,
-      initialValue: controller == null ? initialValue : null,
+      initialValue: controller == null
+          ? (initialValue.isNotEmpty
+                ? Helpers.formatCurrency(
+                    int.tryParse(
+                          initialValue.replaceAll(RegExp(r'[^0-9]'), ''),
+                        ) ??
+                        0,
+                  )
+                : null)
+          : null,
       keyboardType: TextInputType.number,
       inputFormatters: [CurrencyInputFormatter()],
       decoration:

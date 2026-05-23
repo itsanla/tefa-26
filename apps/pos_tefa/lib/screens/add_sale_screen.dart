@@ -6,8 +6,13 @@ import '../models/produksi.dart';
 import '../providers/add_sale_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
-import '../utils/helpers.dart';
+import '../widgets/summary_card.dart';
+import '../utils/ui_utils.dart';
 import '../widgets/currency_input_field.dart';
+import '../widgets/production_picker.dart';
+import '../widgets/edit_item_dialog.dart';
+import '../models/value_enums.dart';
+import '../widgets/item_list.dart';
 
 class AddSaleScreen extends StatefulWidget {
   const AddSaleScreen({super.key, required this.token});
@@ -21,16 +26,96 @@ class AddSaleScreen extends StatefulWidget {
 class _AddSaleScreenState extends State<AddSaleScreen> {
   final AddSaleProvider _provider = AddSaleProvider();
 
+  late final TextEditingController _productionController;
+  late final TextEditingController _beratController;
+  late final TextEditingController _jumlahController;
+  late final TextEditingController _firstInstallmentController;
+  late final TextEditingController _noteController;
+
+  late final FocusNode _productionFocusNode;
+  late final FocusNode _beratFocusNode;
+  late final FocusNode _jumlahFocusNode;
+  late final FocusNode _firstInstallmentFocusNode;
+  late final FocusNode _noteFocusNode;
+
+  int _lastBeratResetKey = 0;
+  int _lastJumlahResetKey = 0;
+
   @override
   void initState() {
     super.initState();
+    _productionController = TextEditingController();
+    _beratController = TextEditingController();
+    _jumlahController = TextEditingController();
+    _firstInstallmentController = TextEditingController();
+    _noteController = TextEditingController();
+
+    _productionFocusNode = FocusNode();
+    _beratFocusNode = FocusNode();
+    _jumlahFocusNode = FocusNode();
+    _firstInstallmentFocusNode = FocusNode();
+    _noteFocusNode = FocusNode();
+
+    _beratController.addListener(() {
+      _provider.updateBerat(_beratController.text);
+    });
+    _jumlahController.addListener(() {
+      _provider.updatejumlahTerjual(_jumlahController.text);
+    });
+    _firstInstallmentController.addListener(() {
+      _provider.updateFirstInstallment(_firstInstallmentController.text);
+    });
+    _noteController.addListener(() {
+      _provider.updateNote(_noteController.text);
+    });
+
+    _provider.addListener(_onProviderChanged);
+
     Future.microtask(_loadProductions);
   }
 
   @override
   void dispose() {
+    _provider.removeListener(_onProviderChanged);
     _provider.dispose();
+    _productionController.dispose();
+    _beratController.dispose();
+    _jumlahController.dispose();
+    _firstInstallmentController.dispose();
+    _noteController.dispose();
+    _productionFocusNode.dispose();
+    _beratFocusNode.dispose();
+    _jumlahFocusNode.dispose();
+    _firstInstallmentFocusNode.dispose();
+    _noteFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onProviderChanged() {
+    if (!mounted) return;
+
+    // sync production label
+    final label = _productionLabel(_provider.selectedProduction);
+    if (_productionController.text != label && !_productionFocusNode.hasFocus) {
+      _productionController.text = label;
+    }
+    if (_provider.beratResetKey != _lastBeratResetKey &&
+        !_beratFocusNode.hasFocus) {
+      _beratController.text = _provider.beratText;
+      _lastBeratResetKey = _provider.beratResetKey;
+    }
+    if (_provider.jumlahTerjualResetKey != _lastJumlahResetKey &&
+        !_jumlahFocusNode.hasFocus) {
+      _jumlahController.text = _provider.jumlahTerjualText;
+      _lastJumlahResetKey = _provider.jumlahTerjualResetKey;
+    }
+    if (_firstInstallmentController.text != _provider.firstInstallmentText &&
+        !_firstInstallmentFocusNode.hasFocus) {
+      _firstInstallmentController.text = _provider.firstInstallmentText;
+    }
+    if (_noteController.text != _provider.note && !_noteFocusNode.hasFocus) {
+      _noteController.text = _provider.note;
+    }
   }
 
   Future<void> _loadProductions() async {
@@ -39,20 +124,20 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
       _provider.startNewSale();
     } on ApiUnauthorizedException {
       if (!mounted) return;
-      await context.read<AuthProvider>().logout();
-      if (mounted) {
-        Navigator.of(context).pop(false);
-      }
+      await UiUtils.handleApiError(
+        context,
+        ApiUnauthorizedException(),
+        onUnauthorized: () async {
+          await context.read<AuthProvider>().logout();
+          if (mounted) Navigator.of(context).pop(false);
+        },
+      );
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      UiUtils.handleApiError(context, error);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat daftar produksi: $error')),
-      );
+      UiUtils.handleApiError(context, error);
     }
   }
 
@@ -66,20 +151,20 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
       Navigator.of(context).pop(true);
     } on ApiUnauthorizedException {
       if (!mounted) return;
-      await context.read<AuthProvider>().logout();
-      if (mounted) {
-        Navigator.of(context).pop(false);
-      }
+      await UiUtils.handleApiError(
+        context,
+        ApiUnauthorizedException(),
+        onUnauthorized: () async {
+          await context.read<AuthProvider>().logout();
+          if (mounted) Navigator.of(context).pop(false);
+        },
+      );
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      UiUtils.handleApiError(context, error);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal membuat penjualan: $error')),
-      );
+      UiUtils.handleApiError(context, error);
     }
   }
 
@@ -97,352 +182,23 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
     return '${production.kodeProduksi} — ${production.komoditas?.nama ?? 'N/A'} (${production.komoditas?.satuan ?? 'N/A'})';
   }
 
-  bool _matchesProductionQuery(Produksi production, String query) {
-    final normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) {
-      return true;
-    }
-
-    final fields = <String>[
-      production.kodeProduksi,
-      production.komoditas?.nama ?? '',
-      production.komoditas?.satuan ?? '',
-      production.ukuran,
-      production.kualitas,
-    ];
-
-    return fields.any((field) => field.toLowerCase().contains(normalizedQuery));
-  }
-
   Future<void> _openProductionPicker(AddSaleProvider provider) async {
-    final queryController = TextEditingController();
-    final scrollController = ScrollController();
-    final loadedProductions = <Produksi>[];
-    final api = ApiService();
-    StateSetter? sheetSetState;
-    var currentPage = 1;
-    var hasMore = true;
-    var isLoadingMore = false;
-    var initialLoadStarted = false;
-    String searchQuery = '';
-
-    Future<void> loadProductions({bool reset = false}) async {
-      if (sheetSetState == null || isLoadingMore) {
-        return;
-      }
-
-      if (reset) {
-        currentPage = 1;
-        hasMore = true;
-        loadedProductions.clear();
-      }
-
-      if (!hasMore) {
-        return;
-      }
-
-      isLoadingMore = true;
-      sheetSetState!.call(() {});
-
-      try {
-        final response = await api.getProductionsPage(
-          widget.token,
-          page: currentPage,
-          pageSize: 10,
-          search: searchQuery,
-        );
-
-        loadedProductions.addAll(response.items);
-
-        final totalItems = response.totalItems;
-        if (response.items.length < 10 ||
-            (totalItems != null && loadedProductions.length >= totalItems)) {
-          hasMore = false;
-        } else {
-          currentPage++;
-        }
-      } on ApiException catch (error) {
-        _showMessage(error.message);
-      } catch (error) {
-        _showMessage('Gagal memuat produksi: $error');
-      } finally {
-        isLoadingMore = false;
-        sheetSetState?.call(() {});
-
-        if (hasMore && scrollController.hasClients) {
-          final nearBottom =
-              scrollController.position.extentAfter < 200 &&
-              scrollController.position.maxScrollExtent > 0;
-          if (nearBottom) {
-            // ignore: discarded_futures
-            Future.microtask(() => loadProductions());
-          }
-        }
-      }
+    final selected = await showProductionPicker(
+      context,
+      widget.token,
+      provider,
+    );
+    if (selected != null) {
+      provider.updateSelectedProduction(selected);
     }
-
-    scrollController.addListener(() {
-      if (!scrollController.hasClients || isLoadingMore || !hasMore) {
-        return;
-      }
-
-      final thresholdReached =
-          scrollController.position.pixels >=
-          scrollController.position.maxScrollExtent - 200;
-      if (thresholdReached) {
-        // ignore: discarded_futures
-        loadProductions();
-      }
-    });
-
-    await showModalBottomSheet<Produksi>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setStateSheet) {
-            sheetSetState = setStateSheet;
-
-            if (!initialLoadStarted) {
-              initialLoadStarted = true;
-              Future.microtask(() => loadProductions(reset: true));
-            }
-
-            final filteredProductions = loadedProductions
-                .where(
-                  (production) =>
-                      _matchesProductionQuery(production, queryController.text),
-                )
-                .toList(growable: false);
-
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Pilih Produksi',
-                    style: Theme.of(sheetContext).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: queryController,
-                    decoration: const InputDecoration(
-                      labelText: 'Cari produksi',
-                      hintText: 'Kode, komoditas, ukuran, atau kualitas',
-                      prefixIcon: Icon(Icons.search_rounded),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      searchQuery = value.trim();
-                      loadProductions(reset: true);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: MediaQuery.of(sheetContext).size.height * 0.55,
-                    child: filteredProductions.isEmpty
-                        ? isLoadingMore && loadedProductions.isEmpty
-                              ? const Center(child: CircularProgressIndicator())
-                              : const Center(
-                                  child: Text('Produksi tidak ditemukan'),
-                                )
-                        : ListView.separated(
-                            controller: scrollController,
-                            itemCount: filteredProductions.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final production = filteredProductions[index];
-                              final isSelected =
-                                  provider.selectedProduction?.id ==
-                                  production.id;
-
-                              return ListTile(
-                                selected: isSelected,
-                                leading: CircleAvatar(
-                                  backgroundColor: const Color(0xFFE7F4EE),
-                                  child: Text(
-                                    production.kodeProduksi.isNotEmpty
-                                        ? production.kodeProduksi[0]
-                                        : '?',
-                                  ),
-                                ),
-                                title: Text(
-                                  production.kodeProduksi,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${production.komoditas?.nama ?? 'N/A'} • ${production.ukuran} • ${production.kualitas}',
-                                ),
-                                trailing: isSelected
-                                    ? const Icon(Icons.check_circle_rounded)
-                                    : null,
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop(production);
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                  if (isLoadingMore) ...[
-                    const SizedBox(height: 12),
-                    const Center(child: CircularProgressIndicator()),
-                  ] else if (hasMore && loadedProductions.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Center(
-                      child: Text('Gulir untuk memuat data berikutnya'),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).then((selected) {
-      if (selected != null) {
-        provider.updateSelectedProduction(selected);
-      }
-    });
-
-    queryController.dispose();
-    scrollController.dispose();
   }
 
   Future<void> _editItem(AddSaleProvider provider, CartItem item) async {
-    final beratController = TextEditingController(
-      text: provider.formatQuantity(item.berat),
+    final updated = await showEditItemDialog(
+      context,
+      item,
+      formatQuantity: provider.formatQuantity,
     );
-    final jumlahController = TextEditingController(
-      text: item.jumlahTerjual.toString(),
-    );
-    String selectedSatuanJual = item.satuanJual;
-
-    final updated = await showDialog<CartItem>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setState) {
-            return AlertDialog(
-              title: const Text('Edit Item'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${item.produksi.kodeProduksi} — ${item.produksi.komoditas?.nama ?? '-'}',
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: selectedSatuanJual,
-                    decoration: const InputDecoration(
-                      labelText: 'Satuan Jual',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'kilogram',
-                        child: Text('Per Kilogram (kg)'),
-                      ),
-                      DropdownMenuItem(value: 'buah', child: Text('Per Buah')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          selectedSatuanJual = value;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  if (selectedSatuanJual == 'kilogram')
-                    TextFormField(
-                      controller: beratController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Jumlah berat (kg)',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  if (selectedSatuanJual == 'kilogram')
-                    const SizedBox(height: 12),
-                  TextFormField(
-                    controller: jumlahController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Jumlah buah',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Batal'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    final berat =
-                        double.tryParse(
-                          beratController.text.replaceAll(',', '.').trim(),
-                        ) ??
-                        0;
-                    final jumlah =
-                        int.tryParse(jumlahController.text.trim()) ?? 0;
-
-                    if (selectedSatuanJual == 'kilogram' && berat <= 0) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Berat harus lebih besar dari 0'),
-                        ),
-                      );
-                      return;
-                    }
-
-                    if (jumlah <= 0) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Jumlah buah harus lebih besar dari 0'),
-                        ),
-                      );
-                      return;
-                    }
-
-                    final finalBerat = selectedSatuanJual == 'kilogram'
-                        ? berat
-                        : 0.0;
-
-                    Navigator.of(dialogContext).pop(
-                      item.copyWith(
-                        berat: finalBerat,
-                        jumlahTerjual: jumlah,
-                        satuanJual: selectedSatuanJual,
-                      ),
-                    );
-                  },
-                  child: const Text('Simpan'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
     if (updated == null) return;
     provider.updateItem(item.produksi.id, updated);
   }
@@ -483,13 +239,9 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                       if (provider.errorMessage != null)
                         const SizedBox(height: 12),
                       TextFormField(
+                        controller: _productionController,
+                        focusNode: _productionFocusNode,
                         readOnly: true,
-                        key: ValueKey(
-                          provider.selectedProduction?.id ?? 'none',
-                        ),
-                        initialValue: _productionLabel(
-                          provider.selectedProduction,
-                        ),
                         decoration: InputDecoration(
                           labelText: 'Pilih Produksi',
                           border: const OutlineInputBorder(),
@@ -525,7 +277,7 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                       if (provider.selectedProduction != null &&
                           provider.canSelectSatuanJual) ...[
                         const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
+                        DropdownButtonFormField<Unit>(
                           isExpanded: true,
                           initialValue: provider.selectedSatuanJual,
                           decoration: const InputDecoration(
@@ -534,11 +286,11 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                           ),
                           items: const [
                             DropdownMenuItem(
-                              value: 'kilogram',
+                              value: Unit.kilogram,
                               child: Text('Per Kilogram (kg)'),
                             ),
                             DropdownMenuItem(
-                              value: 'buah',
+                              value: Unit.buah,
                               child: Text('Per Buah'),
                             ),
                           ],
@@ -551,10 +303,10 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                       ],
                       const SizedBox(height: 12),
                       if (provider.selectedProduction != null &&
-                          provider.selectedSatuanJual == 'kilogram')
+                          provider.selectedSatuanJual == Unit.kilogram)
                         TextFormField(
-                          key: ValueKey(provider.beratResetKey),
-                          initialValue: provider.beratText,
+                          controller: _beratController,
+                          focusNode: _beratFocusNode,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
@@ -562,20 +314,18 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                             labelText: 'Jumlah berat (kg)',
                             border: OutlineInputBorder(),
                           ),
-                          onChanged: provider.updateBerat,
                         ),
                       if (provider.selectedProduction != null &&
-                          provider.selectedSatuanJual == 'kilogram')
+                          provider.selectedSatuanJual == Unit.kilogram)
                         const SizedBox(height: 12),
                       TextFormField(
-                        key: ValueKey('buah-${provider.jumlahTerjualResetKey}'),
-                        initialValue: provider.jumlahTerjualText,
+                        controller: _jumlahController,
+                        focusNode: _jumlahFocusNode,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Jumlah buah',
                           border: OutlineInputBorder(),
                         ),
-                        onChanged: provider.updatejumlahTerjual,
                       ),
                       const SizedBox(height: 12),
                       FilledButton.icon(
@@ -597,134 +347,41 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                             ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 10),
-                      if (provider.items.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE6ECE9)),
-                          ),
-                          child: const Text(
+                      ItemList(
+                        items: provider.items.toList(growable: false),
+                        isSaving: provider.isSaving,
+                        onEdit: (item) => _editItem(provider, item),
+                        onRemove: (id) => provider.removeItem(id),
+                        formatQuantity: provider.formatQuantity,
+                        emptyMessage:
                             'Belum ada item. Tambahkan minimal satu item untuk membuat penjualan.',
-                          ),
-                        )
-                      else
-                        ...provider.items.map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFE6ECE9),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${item.produksi.kodeProduksi} — ${item.produksi.komoditas?.nama ?? '-'}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(fontWeight: FontWeight.w800),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Ukuran: ${item.produksi.ukuran}  •  Kualitas: ${item.produksi.kualitas}',
-                                  ),
-                                  Text(
-                                    'Satuan Jual: ${item.satuanJual == 'kilogram' ? 'Per Kilogram' : 'Per Buah'}',
-                                  ),
-                                  if (item.satuanJual == 'kilogram')
-                                    Text(
-                                      'Berat: ${provider.formatQuantity(item.berat)} ${item.produksi.komoditas?.satuan ?? ''}',
-                                    ),
-                                  Text('Jumlah buah: ${item.jumlahTerjual}'),
-                                  Text(
-                                    'Subtotal: ${Helpers.formatRupiah(item.subtotal)}',
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Wrap(
-                                      spacing: 8,
-                                      children: [
-                                        TextButton.icon(
-                                          onPressed: provider.isSaving
-                                              ? null
-                                              : () => _editItem(provider, item),
-                                          icon: const Icon(Icons.edit_outlined),
-                                          label: const Text('Edit'),
-                                        ),
-                                        TextButton.icon(
-                                          onPressed: provider.isSaving
-                                              ? null
-                                              : () => provider.removeItem(
-                                                  item.produksi.id,
-                                                ),
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                          ),
-                                          label: const Text('Hapus'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F7F6),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFBFDCD6)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ringkasan',
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w800),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Total item: ${provider.formatQuantity(provider.totalJumlahTerjual)}',
-                            ),
-                            Text(
-                              'Total nilai: ${Helpers.formatRupiah(provider.totalValue)}',
-                            ),
-                          ],
-                        ),
                       ),
                       const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
+                      SummaryCard(
+                        totalItems: provider.totalJumlahTerjual,
+                        totalValue: provider.totalValue,
+                        formatQuantity: provider.formatQuantity,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<PaymentStatus>(
                         key: ValueKey(provider.paymentMethod),
                         initialValue: provider.paymentMethod,
                         decoration: const InputDecoration(
                           labelText: 'Status',
                           border: OutlineInputBorder(),
                         ),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
-                            value: 'lunas',
-                            child: Text('Lunas'),
+                            value: PaymentStatus.lunas,
+                            child: Text(PaymentStatus.lunas.label),
                           ),
                           DropdownMenuItem(
-                            value: 'hutang',
-                            child: Text('Hutang'),
+                            value: PaymentStatus.hutang,
+                            child: Text(PaymentStatus.hutang.label),
                           ),
                           DropdownMenuItem(
-                            value: 'angsuran',
-                            child: Text('Angsuran'),
+                            value: PaymentStatus.angsuran,
+                            child: Text(PaymentStatus.angsuran.label),
                           ),
                         ],
                         onChanged: (value) {
@@ -737,20 +394,21 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                         const SizedBox(height: 12),
                         CurrencyInputField(
                           labelText: 'Nominal uang muka',
-                          initialValue: provider.firstInstallmentText,
+                          controller: _firstInstallmentController,
+                          focusNode: _firstInstallmentFocusNode,
                           onChanged: provider.updateFirstInstallment,
                           prefixText: 'Rp ',
                         ),
                       ],
                       const SizedBox(height: 12),
                       TextFormField(
-                        initialValue: provider.note,
+                        controller: _noteController,
+                        focusNode: _noteFocusNode,
                         decoration: const InputDecoration(
                           labelText: 'Keterangan (opsional)',
                           border: OutlineInputBorder(),
                         ),
                         maxLines: 2,
-                        onChanged: provider.updateNote,
                       ),
                       const SizedBox(height: 16),
                       FilledButton.icon(

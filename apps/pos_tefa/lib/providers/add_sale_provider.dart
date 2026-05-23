@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/cart_item.dart';
 import '../models/produksi.dart';
+import '../models/value_enums.dart';
 import '../services/api_service.dart';
 
 class AddSaleProvider extends ChangeNotifier {
@@ -22,9 +23,9 @@ class AddSaleProvider extends ChangeNotifier {
   String _beratText = '1';
   String _jumlahTerjualText = '1';
   String _note = '';
-  String _paymentMethod = 'lunas';
+  PaymentStatus _paymentMethod = PaymentStatus.lunas;
   String _firstInstallmentText = '';
-  String _selectedSatuanJual = 'kilogram';
+  Unit _selectedSatuanJual = Unit.kilogram;
   int _beratResetKey = 0;
   int _jumlahTerjualResetKey = 0;
 
@@ -39,12 +40,12 @@ class AddSaleProvider extends ChangeNotifier {
   String get beratText => _beratText;
   String get jumlahTerjualText => _jumlahTerjualText;
   String get note => _note;
-  String get paymentMethod => _paymentMethod;
+  PaymentStatus get paymentMethod => _paymentMethod;
   String get firstInstallmentText => _firstInstallmentText;
-  String get selectedSatuanJual => _selectedSatuanJual;
+  Unit get selectedSatuanJual => _selectedSatuanJual;
   int get beratResetKey => _beratResetKey;
   int get jumlahTerjualResetKey => _jumlahTerjualResetKey;
-  bool get isInstallmentPayment => _paymentMethod == 'angsuran';
+  bool get isInstallmentPayment => _paymentMethod == PaymentStatus.angsuran;
   bool get canSelectSatuanJual => _selectedProduction != null;
 
   double get totalJumlahTerjual =>
@@ -66,7 +67,7 @@ class AddSaleProvider extends ChangeNotifier {
   void startNewSale() {
     _items.clear();
     _selectedProduction = _productions.isEmpty ? null : _productions.first;
-    _selectedSatuanJual = 'kilogram';
+    _selectedSatuanJual = Unit.kilogram;
     _beratText = '1';
     _jumlahTerjualText = '1';
     _note = '';
@@ -82,17 +83,17 @@ class AddSaleProvider extends ChangeNotifier {
     }
 
     _selectedProduction = production;
-    _selectedSatuanJual = 'kilogram';
+    _selectedSatuanJual = Unit.kilogram;
     notifyListeners();
   }
 
-  void updateSelectedSatuanJual(String value) {
+  void updateSelectedSatuanJual(Unit value) {
     if (_selectedSatuanJual == value) {
       return;
     }
 
     _selectedSatuanJual = value;
-    if (value == 'buah') {
+    if (value == Unit.buah) {
       _beratText = '1';
     }
     notifyListeners();
@@ -110,13 +111,13 @@ class AddSaleProvider extends ChangeNotifier {
     _note = value;
   }
 
-  void updatePaymentMethod(String value) {
+  void updatePaymentMethod(PaymentStatus value) {
     if (_paymentMethod == value) {
       return;
     }
 
     _paymentMethod = value;
-    if (_paymentMethod != 'angsuran') {
+    if (_paymentMethod != PaymentStatus.angsuran) {
       _firstInstallmentText = '';
     }
     notifyListeners();
@@ -138,16 +139,15 @@ class AddSaleProvider extends ChangeNotifier {
 
   String get paymentSummaryLabel {
     switch (_paymentMethod) {
-      case 'hutang':
+      case PaymentStatus.hutang:
         return 'Pembayaran: Hutang';
-      case 'angsuran':
+      case PaymentStatus.angsuran:
         final amount = firstInstallmentAmount;
         final installmentText = amount == null
             ? 'Uang muka belum diisi'
             : 'Uang muka: $amount';
         return 'Pembayaran: Angsuran ($installmentText)';
-      case 'lunas':
-      default:
+      case PaymentStatus.lunas:
         return 'Pembayaran: Lunas';
     }
   }
@@ -196,6 +196,35 @@ class AddSaleProvider extends ChangeNotifier {
     }
   }
 
+  /// Fetch a single page of productions for pickers or pagination UIs.
+  /// Delegates to [ApiService] so UI code does not call the API client directly.
+  Future<ProduksiListResponse> fetchProductionsPage(
+    String token, {
+    int page = 1,
+    int pageSize = 10,
+    String search = '',
+  }) async {
+    try {
+      final response = await _apiService.getProductionsPage(
+        token,
+        page: page,
+        pageSize: pageSize,
+        search: search,
+      );
+
+      return response;
+    } on ApiUnauthorizedException catch (error) {
+      _errorMessage = error.message;
+      rethrow;
+    } on ApiException catch (error) {
+      _errorMessage = error.message;
+      rethrow;
+    } catch (error) {
+      _errorMessage = 'Gagal memuat daftar produksi: $error';
+      rethrow;
+    }
+  }
+
   String? addItem() {
     final production = _selectedProduction;
     if (production == null) {
@@ -203,7 +232,7 @@ class AddSaleProvider extends ChangeNotifier {
     }
 
     final berat = double.tryParse(_beratText.replaceAll(',', '.').trim()) ?? 0;
-    if (_selectedSatuanJual == 'kilogram' && berat <= 0) {
+    if (_selectedSatuanJual == Unit.kilogram && berat <= 0) {
       return 'Jumlah berat harus lebih besar dari 0';
     }
 
@@ -218,29 +247,29 @@ class AddSaleProvider extends ChangeNotifier {
 
     if (existingIndex >= 0) {
       final existing = _items[existingIndex];
-      final mergedBerat = _selectedSatuanJual == 'kilogram'
+      final mergedBerat = _selectedSatuanJual == Unit.kilogram
           ? existing.berat + berat
           : 0.0;
       _items[existingIndex] = existing.copyWith(
         berat: mergedBerat,
         jumlahTerjual: existing.jumlahTerjual + jumlahTerjual,
-        satuanJual: _selectedSatuanJual,
+        satuanJual: _selectedSatuanJual.value,
       );
     } else {
       _items.add(
         CartItem(
           produksi: production,
           idKomodity: production.idKomoditas,
-          berat: _selectedSatuanJual == 'kilogram' ? berat : 0.0,
+          berat: _selectedSatuanJual == Unit.kilogram ? berat : 0.0,
           jumlahTerjual: jumlahTerjual,
-          satuanJual: _selectedSatuanJual,
+          satuanJual: _selectedSatuanJual.value,
         ),
       );
     }
 
     _beratText = '1';
     _jumlahTerjualText = '1';
-    _selectedSatuanJual = 'kilogram';
+    _selectedSatuanJual = Unit.kilogram;
     _beratResetKey++;
     _jumlahTerjualResetKey++;
     _errorMessage = null;
@@ -285,7 +314,7 @@ class AddSaleProvider extends ChangeNotifier {
               'satuan_jual': item.satuanJual,
             };
 
-            if (item.satuanJual == 'kilogram') {
+            if (UnitExt.fromString(item.satuanJual) == Unit.kilogram) {
               itemPayload['berat'] = item.berat;
             }
 
@@ -297,7 +326,7 @@ class AddSaleProvider extends ChangeNotifier {
         token: token,
         keterangan: composedNote,
         items: payload,
-        status: _paymentMethod,
+        status: _paymentMethod.value,
         uangMuka: isInstallmentPayment ? firstInstallmentAmount : null,
       );
 
@@ -325,11 +354,11 @@ class AddSaleProvider extends ChangeNotifier {
     _isLoading = true;
     _isSaving = false;
     _errorMessage = null;
-    _selectedSatuanJual = 'kilogram';
+    _selectedSatuanJual = Unit.kilogram;
     _beratText = '1';
     _jumlahTerjualText = '1';
     _note = '';
-    _paymentMethod = 'lunas';
+    _paymentMethod = PaymentStatus.lunas;
     _firstInstallmentText = '';
     _beratResetKey++;
     _jumlahTerjualResetKey++;
