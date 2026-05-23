@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:pos_tefa/models/penjualan.dart';
 import 'package:pos_tefa/models/produksi.dart';
 
+import '../app/app_config.dart';
 import '../models/app_models.dart';
 
 class ApiException implements Exception {
@@ -39,13 +40,15 @@ class ProduksiListResponse {
 }
 
 class ApiService {
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
+  ApiService({http.Client? client, String? baseUrl})
+    : _client = client ?? http.Client(),
+      _baseUrl = baseUrl ?? AppConfig.apiBaseUrl;
 
-  static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
+  final String _baseUrl;
   final http.Client _client;
 
   Uri _uri(String path, [Map<String, Object?>? queryParameters]) {
-    final uri = Uri.parse('$baseUrl$path');
+    final uri = Uri.parse('$_baseUrl$path');
 
     if (queryParameters == null || queryParameters.isEmpty) {
       return uri;

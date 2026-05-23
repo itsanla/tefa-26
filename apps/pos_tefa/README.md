@@ -83,11 +83,19 @@ flutter build ios --release
 
 ## Konfigurasi
 
-Update file konfigurasi untuk menyesuaikan dengan environment:
+POS TEFA sekarang mendukung dua flavor Android:
+
+- `dev` untuk stage/dev
+- `prod` untuk production
+
+Base URL API diatur lewat `--dart-define` agar endpoint bisa diganti tanpa mengubah kode:
 
 ```dart
-// lib/utils/constants.dart
-const String API_BASE_URL = 'https://api.tefa26.example.com';
+// dev flavor
+APP_API_BASE_URL_DEV=https://stage.example.com/api
+
+// prod flavor
+APP_API_BASE_URL_PROD=https://api.example.com/api
 ```
 
 ---
@@ -107,6 +115,20 @@ flutter pub get
 flutter run -v
 ```
 
+### Menjalankan Flavor Dev
+
+```bash
+flutter run --flavor dev -t lib/main_dev.dart \
+	--dart-define=APP_API_BASE_URL_DEV=https://stage.example.com/api
+```
+
+### Menjalankan Flavor Production
+
+```bash
+flutter run --flavor prod -t lib/main_prod.dart \
+	--dart-define=APP_API_BASE_URL_PROD=https://api.example.com/api
+```
+
 ### Testing
 
 ```bash
@@ -117,6 +139,20 @@ flutter test
 
 ```bash
 flutter build apk --debug
+```
+
+### Build APK Flavor Dev
+
+```bash
+flutter build apk --flavor dev -t lib/main_dev.dart \
+	--dart-define=APP_API_BASE_URL_DEV=https://stage.example.com/api
+```
+
+### Build APK Flavor Production
+
+```bash
+flutter build apk --flavor prod -t lib/main_prod.dart \
+	--dart-define=APP_API_BASE_URL_PROD=https://api.example.com/api
 ```
 
 ---
