@@ -148,6 +148,15 @@ flutter build apk --flavor dev -t lib/main_dev.dart \
 	--dart-define=APP_API_BASE_URL_DEV=https://stage.example.com/api
 ```
 
+### Build APK with Project Name
+
+Use the wrapper script to build and rename the final APK so it includes the project name and flavor:
+
+```bash
+./scripts/build_apk.sh dev https://stage.example.com/api
+./scripts/build_apk.sh prod https://api.example.com/api
+```
+
 ### Build APK Flavor Production
 
 ```bash
